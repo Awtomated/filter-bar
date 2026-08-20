@@ -1,6 +1,6 @@
 {
   "name": "@awtomated/filter-bar",
-  "version": "0.0.0-development",
+  "version": "1.0.0",
   "description": "A schema-driven, fully customizable React filter bar (DynamicFilterBar) and filter-toggle button for MUI applications.",
   "license": "UNLICENSED",
   "main": "dist/index.js",
@@ -32,7 +32,9 @@
     "lint:fix": "yarn lint --fix",
     "format": "prettier --write .",
     "prepare": "husky install",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "smoke-test": "yarn build && node scripts/smoke-test.mjs",
+    "release": "semantic-release"
   },
   "peerDependencies": {
     "@mui/icons-material": "^7.0.0 || ^9.0.0",
@@ -90,9 +92,5 @@
   "engines": {
     "node": ">=18.0.0"
   },
-  "author": "Awtomated",
-  "publishConfig": {
-    "access": "restricted",
-    "registry": "https://npm.awtomated.com/"
-  }
+  "author": "Awtomated"
 }

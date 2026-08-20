@@ -1,6 +1,12 @@
 import dayjs from 'dayjs';
-import utc from 'dayjs/plugin/utc';
-import timezonePlugin from 'dayjs/plugin/timezone';
+// dayjs ships no `exports` map for its plugins, so Node's strict ESM
+// resolver (used when consumers load dist/index.mjs directly) can't resolve
+// these extensionless — the explicit `.js` is required there even though it
+// trips the airbnb import/extensions rule.
+// eslint-disable-next-line import/extensions
+import utc from 'dayjs/plugin/utc.js';
+// eslint-disable-next-line import/extensions
+import timezonePlugin from 'dayjs/plugin/timezone.js';
 
 dayjs.extend(utc);
 dayjs.extend(timezonePlugin);

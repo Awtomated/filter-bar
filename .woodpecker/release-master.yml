@@ -4,7 +4,7 @@
 # Same semantic-release flow as release-develop.yml, but on the
 # `master` branch config in .releaserc.json this is a normal
 # (non-prerelease) release: published under Verdaccio's `latest`
-# dist-tag, so plain `yarn add @awtomated/icon-renderer` picks it up.
+# dist-tag, so plain `yarn add @awtomated/filter-bar` picks it up.
 #
 # Tests/lint are not repeated here — PR checks already gated the merge.
 #
@@ -28,7 +28,7 @@ steps:
       - yarn install --frozen-lockfile
       - echo "//npm.awtomated.com/:_authToken=${NPM_TOKEN}" >> .npmrc
       - git remote set-url origin
-        "https://x-access-token:${GH_TOKEN}@github.com/Awtomated/icon-renderer.git"
+        "https://x-access-token:${GH_TOKEN}@github.com/Awtomated/filter-bar.git"
       - git config user.name "release-bot"
       - git config user.email "ci@awtomated.com"
       - yarn release
