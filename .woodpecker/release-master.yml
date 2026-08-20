@@ -1,0 +1,21 @@
+when:
+  - event: push
+    branch: master
+
+steps:
+  - name: release
+    image: node:22-alpine
+    environment:
+      NPM_TOKEN:
+        from_secret: NPM_TOKEN
+      GH_TOKEN:
+        from_secret: GH_TOKEN
+    commands:
+      - apk add --no-cache git
+      - yarn install --frozen-lockfile
+      - echo "//npm.awtomated.com/:_authToken=${NPM_TOKEN}" >> .npmrc
+      - git remote set-url origin
+        "https://x-access-token:${GH_TOKEN}@github.com/Awtomated/filter-bar.git"
+      - git config user.name "release-bot"
+      - git config user.email "ci@awtomated.com"
+      - yarn release
