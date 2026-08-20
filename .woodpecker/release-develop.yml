@@ -1,0 +1,46 @@
+# ============================================================
+# Prerelease publish — runs on push to develop
+# ============================================================
+# Versioning is fully automated by semantic-release, driven by
+# Conventional Commits on the merged PR(s):
+#   fix:              -> patch prerelease   (1.2.3 -> 1.2.4-next.1)
+#   feat:              -> minor prerelease   (1.2.3 -> 1.3.0-next.1)
+#   BREAKING CHANGE:   -> major prerelease   (1.2.3 -> 2.0.0-next.1)
+#   chore/docs/etc:    -> no release
+# Published to Verdaccio under the `next` dist-tag, so it never
+# affects `yarn add @awtomated/icon-renderer` (which resolves `latest`).
+# Consumers opt in explicitly with `yarn add @awtomated/icon-renderer@next`.
+#
+# Tests/lint are not repeated here — PR checks already gated the merge.
+#
+# Required secrets:
+#   NPM_TOKEN  — Verdaccio auth token with publish rights for the
+#                @awtomated scope (see ci/verdaccio-config.yaml —
+#                the static-access-token middleware must be enabled
+#                there for this to actually authenticate).
+#   GH_TOKEN   — GitHub PAT (repo contents:write) so
+#                @semantic-release/git can push the release commit
+#                (CHANGELOG.md, package.json bump) and tag back to develop.
+# ============================================================
+
+when:
+  - event: push
+    branch: develop
+
+steps:
+  - name: release
+    image: node:22-alpine
+    environment:
+      NPM_TOKEN:
+        from_secret: NPM_TOKEN
+      GH_TOKEN:
+        from_secret: GH_TOKEN
+    commands:
+      - apk add --no-cache git
+      - yarn install --frozen-lockfile
+      - echo "//npm.awtomated.com/:_authToken=${NPM_TOKEN}" >> .npmrc
+      - git remote set-url origin
+        "https://x-access-token:${GH_TOKEN}@github.com/Awtomated/icon-renderer.git"
+      - git config user.name "release-bot"
+      - git config user.email "ci@awtomated.com"
+      - yarn release

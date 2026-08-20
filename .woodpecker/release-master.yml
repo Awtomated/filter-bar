@@ -1,0 +1,34 @@
+# ============================================================
+# Stable release publish — runs on push to master
+# ============================================================
+# Same semantic-release flow as release-develop.yml, but on the
+# `master` branch config in .releaserc.json this is a normal
+# (non-prerelease) release: published under Verdaccio's `latest`
+# dist-tag, so plain `yarn add @awtomated/icon-renderer` picks it up.
+#
+# Tests/lint are not repeated here — PR checks already gated the merge.
+#
+# Required secrets: see release-develop.yml (NPM_TOKEN, GH_TOKEN).
+# ============================================================
+
+when:
+  - event: push
+    branch: master
+
+steps:
+  - name: release
+    image: node:22-alpine
+    environment:
+      NPM_TOKEN:
+        from_secret: NPM_TOKEN
+      GH_TOKEN:
+        from_secret: GH_TOKEN
+    commands:
+      - apk add --no-cache git
+      - yarn install --frozen-lockfile
+      - echo "//npm.awtomated.com/:_authToken=${NPM_TOKEN}" >> .npmrc
+      - git remote set-url origin
+        "https://x-access-token:${GH_TOKEN}@github.com/Awtomated/icon-renderer.git"
+      - git config user.name "release-bot"
+      - git config user.email "ci@awtomated.com"
+      - yarn release
