@@ -1,0 +1,58 @@
+when:
+  - event: pull_request
+
+steps:
+  - name: install-and-coverage
+    image: node:22-alpine
+    commands:
+      - yarn install --frozen-lockfile
+      - yarn test --coverage --coverageReporters=lcov
+
+  - name: sonarqube-scan
+    image: sonarsource/sonar-scanner-cli:latest
+    depends_on: [install-and-coverage]
+    environment:
+      SONAR_TOKEN:
+        from_secret: SONAR_TOKEN
+      SONAR_HOST_URL:
+        from_secret: SONAR_HOST_URL
+    commands:
+      - sonar-scanner -Dsonar.projectKey=${CI_REPO_NAME} -Dsonar.sources=src -Dsonar.tests=test
+        -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
+        -Dsonar.exclusions=node_modules/**,coverage/**
+        -Dsonar.pullrequest.key=${CI_COMMIT_PULL_REQUEST}
+        -Dsonar.pullrequest.branch=${CI_COMMIT_SOURCE_BRANCH}
+        -Dsonar.pullrequest.base=${CI_COMMIT_TARGET_BRANCH} -Dsonar.scm.revision=${CI_COMMIT_SHA}
+        -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.token=$SONAR_TOKEN
+
+  - name: sonarqube-quality-gate
+    image: sonarsource/sonar-scanner-cli:latest
+    depends_on: [sonarqube-scan]
+    environment:
+      SONAR_TOKEN:
+        from_secret: SONAR_TOKEN
+      SONAR_HOST_URL:
+        from_secret: SONAR_HOST_URL
+    commands:
+      - |
+        command -v curl >/dev/null 2>&1 || apk add --no-cache curl
+      - |
+        TASK_ID=$(grep ceTaskId .scannerwork/report-task.txt | cut -d= -f2)
+        echo "Waiting for SonarQube analysis: $TASK_ID"
+        TASK_STATUS="PENDING"
+        MAX_WAIT=300
+        ELAPSED=0
+        while [ "$TASK_STATUS" != "SUCCESS" ] && [ "$TASK_STATUS" != "FAILED" ] && [ "$TASK_STATUS" != "CANCELLED" ]; do
+          if [ "$ELAPSED" -ge "$MAX_WAIT" ]; then
+            echo "Timed out after $MAX_WAIT seconds waiting for SonarQube analysis to finish"
+            exit 1
+          fi
+          sleep 5
+          ELAPSED=$((ELAPSED + 5))
+          TASK_STATUS=$(curl -s -u $SONAR_TOKEN: "$SONAR_HOST_URL/api/ce/task?id=$TASK_ID" | grep -o '"status":"[A-Z]*"' | head -1 | cut -d'"' -f4)
+          echo "CE task: $TASK_STATUS ($ELAPSED seconds elapsed)"
+        done
+        [ "$TASK_STATUS" = "SUCCESS" ] || (echo "SonarQube analysis failed or cancelled" && exit 1)
+        QG=$(curl -s -u $SONAR_TOKEN: "$SONAR_HOST_URL/api/qualitygates/project_status?projectKey=${CI_REPO_NAME}&pullRequest=${CI_COMMIT_PULL_REQUEST}" | grep -o '"status":"[A-Z]*"' | head -1 | cut -d'"' -f4)
+        echo "Quality Gate: $QG"
+        [ "$QG" = "OK" ] || exit 1
