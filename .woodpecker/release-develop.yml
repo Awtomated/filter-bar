@@ -8,8 +8,8 @@
 #   BREAKING CHANGE:   -> major prerelease   (1.2.3 -> 2.0.0-next.1)
 #   chore/docs/etc:    -> no release
 # Published to Verdaccio under the `next` dist-tag, so it never
-# affects `yarn add @awtomated/icon-renderer` (which resolves `latest`).
-# Consumers opt in explicitly with `yarn add @awtomated/icon-renderer@next`.
+# affects `yarn add @awtomated/filter-bar` (which resolves `latest`).
+# Consumers opt in explicitly with `yarn add @awtomated/filter-bar@next`.
 #
 # Tests/lint are not repeated here — PR checks already gated the merge.
 #
@@ -40,7 +40,7 @@ steps:
       - yarn install --frozen-lockfile
       - echo "//npm.awtomated.com/:_authToken=${NPM_TOKEN}" >> .npmrc
       - git remote set-url origin
-        "https://x-access-token:${GH_TOKEN}@github.com/Awtomated/icon-renderer.git"
+        "https://x-access-token:${GH_TOKEN}@github.com/Awtomated/filter-bar.git"
       - git config user.name "release-bot"
       - git config user.email "ci@awtomated.com"
       - yarn release
