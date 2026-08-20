@@ -32,7 +32,6 @@ function checkExports(mod, label) {
   if (missing.length) {
     throw new Error(`${label} is missing exports: ${missing.join(', ')}`);
   }
-  console.log(`${label} smoke test passed (${REQUIRED_EXPORTS.length} exports found)`);
 }
 
 const require = createRequire(import.meta.url);
