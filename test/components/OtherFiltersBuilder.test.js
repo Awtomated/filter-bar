@@ -52,6 +52,20 @@ describe('OtherFiltersBuilder', () => {
     expect(screen.getByRole('button', { name: 'Add filter' })).toBeDisabled();
   });
 
+  it('renders the "Add filter" button with a leading AddIcon', () => {
+    render(
+      <OtherFiltersBuilder
+        otherFieldDefs={[field({})]}
+        appliedOtherFilters={[]}
+        onApply={() => {}}
+        onCancel={() => {}}
+        fetcher={jest.fn()}
+      />
+    );
+    const addButton = screen.getByRole('button', { name: 'Add filter' });
+    expect(addButton.querySelector('[data-testid="AddIcon"]')).toBeInTheDocument();
+  });
+
   it('seeds draft rows from appliedOtherFilters when present', () => {
     const nameField = field({});
     const applied = [{ id: 'f1', field: 'name', operatorId: 'name__icontains', value: 'acme' }];
