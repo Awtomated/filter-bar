@@ -31,7 +31,7 @@
     "lint": "eslint . --ext .js,.jsx",
     "lint:fix": "yarn lint --fix",
     "format": "prettier --write .",
-    "prepare": "husky install",
+    "prepare": "husky install || true && npm run build",
     "prepublishOnly": "npm run build",
     "smoke-test": "yarn build && node scripts/smoke-test.mjs",
     "release": "semantic-release"

@@ -214,6 +214,25 @@ export function isMultiSelectionField(fieldDef) {
   return op?.input_field === 'select' && op?.input_type === 'multiple';
 }
 
+// most_used_filters entries usually name a field directly, but can also
+// name one of that field's operators instead (by query_param, or by the
+// operator's full id for a "none" input_type op that shares its query_param
+// with a sibling) — e.g. "email__istartswith" picks out email's "Starts
+// with" operator specifically, not just the email field. Field-name matches
+// take priority so a field can't accidentally match one of its own
+// operators' query_param when that happens to equal the field name too.
+export function matchMostUsedField(name, filterFields) {
+  const directField = filterFields.find((f) => f.name === name);
+  if (directField) return { fieldDef: directField, operatorId: null };
+
+  const operatorMatch = filterFields
+    .flatMap((f) => (f.operators ?? []).map((op) => ({ fieldDef: f, op })))
+    .find(({ op }) => getOperatorId(op) === name || op.query_param === name);
+  return operatorMatch
+    ? { fieldDef: operatorMatch.fieldDef, operatorId: getOperatorId(operatorMatch.op) }
+    : null;
+}
+
 export function getChoiceId(choice) {
   return choice?.id;
 }

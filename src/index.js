@@ -19,4 +19,5 @@ export {
   isMultiSelectionField,
   isSelectionField,
   makeFilter,
+  matchMostUsedField,
 } from './utils';

@@ -2,6 +2,7 @@ import { useState } from 'react';
 // Named (root-barrel) imports — see the note in QuickFilterChip.js about why
 // these must not be deep `@mui/material/*`-style imports.
 import { Box, Button, Divider, Typography } from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
 import FilterRow from './FilterRow';
 import { useFilterBarLabels } from '../tokens';
 import { getDefaultOperatorId, makeFilter } from '../utils';
@@ -51,8 +52,8 @@ function OtherFiltersBuilder({ otherFieldDefs, appliedOtherFilters, onApply, onC
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, px: 2, pb: 1 }}>
-        <Typography variant='h6' sx={{ fontWeight: 500 }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, px: 3, pb: 1, py: 2 }}>
+        <Typography variant='h6' sx={{ fontWeight: 500, mb: 2 }}>
           {labels.filtersTitle}
         </Typography>
 
@@ -73,8 +74,8 @@ function OtherFiltersBuilder({ otherFieldDefs, appliedOtherFilters, onApply, onC
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          paddingLeft: '14px',
-          paddingRight: '14px',
+          paddingLeft: '18px',
+          paddingRight: '18px',
         }}
       >
         <Button
@@ -82,7 +83,18 @@ function OtherFiltersBuilder({ otherFieldDefs, appliedOtherFilters, onApply, onC
           size='small'
           onClick={addFilter}
           disabled={!otherFieldDefs.length}
-          sx={{ textTransform: 'none', px: 0.5 }}
+          startIcon={<AddIcon sx={{ width: '18px', height: '18px' }} />}
+          sx={{
+            px: 0.5,
+            color: 'var(--primary-main, #460D91)',
+            fontFamily: 'var(--fontFamily, Poppins)',
+            fontSize: 'var(--font-size-08125-rem, 13px)',
+            fontStyle: 'normal',
+            fontWeight: 'var(--fontWeightMedium, 500)',
+            lineHeight: '22px',
+            letterSpacing: '0.46px',
+            textTransform: 'capitalize',
+          }}
         >
           {labels.addFilter}
         </Button>
@@ -100,7 +112,7 @@ function OtherFiltersBuilder({ otherFieldDefs, appliedOtherFilters, onApply, onC
 
       <Divider sx={{ my: 1 }} />
 
-      <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+      <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end', pt: 0.5, px: 1, pb: 1.5 }}>
         <Button variant='text' size='medium' onClick={onCancel} sx={{ textTransform: 'none' }}>
           {labels.cancel}
         </Button>
