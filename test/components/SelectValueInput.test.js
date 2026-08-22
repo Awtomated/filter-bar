@@ -121,4 +121,64 @@ describe('SelectValueInput', () => {
     );
     expect(screen.getByDisplayValue('US - United States')).toBeInTheDocument();
   });
+
+  it('allows picking more than one option when multiple is true, and stays open after a pick', async () => {
+    const onChange = jest.fn();
+    const choices = [
+      { id: 1, name: 'Alpha' },
+      { id: 2, name: 'Beta' },
+    ];
+    render(
+      <SelectValueInput
+        fetcher={jest.fn()}
+        choices={choices}
+        label='Value'
+        value={[]}
+        onChange={onChange}
+        multiple
+      />
+    );
+    await userEvent.click(screen.getByLabelText('Value'));
+    await userEvent.click(await screen.findByText('Alpha'));
+    expect(onChange).toHaveBeenCalledWith([choices[0]]);
+    expect(screen.getByRole('listbox')).toBeInTheDocument();
+  });
+
+  it('renders only the first selected option as a chip plus a "+N" indicator, keeping the field height fixed', () => {
+    const choices = [
+      { id: 1, name: 'Alpha' },
+      { id: 2, name: 'Beta' },
+      { id: 3, name: 'Gamma' },
+    ];
+    render(
+      <SelectValueInput
+        fetcher={jest.fn()}
+        choices={choices}
+        label='Value'
+        value={choices}
+        onChange={() => {}}
+        multiple
+      />
+    );
+    expect(screen.getByText('Alpha')).toBeInTheDocument();
+    expect(screen.queryByText('Beta')).not.toBeInTheDocument();
+    expect(screen.queryByText('Gamma')).not.toBeInTheDocument();
+    expect(screen.getByText('+2')).toBeInTheDocument();
+  });
+
+  it('gives selected chips the brand purple label and border color', () => {
+    const choices = [{ id: 1, name: 'Alpha' }];
+    render(
+      <SelectValueInput
+        fetcher={jest.fn()}
+        choices={choices}
+        label='Value'
+        value={choices}
+        onChange={() => {}}
+        multiple
+      />
+    );
+    const chip = screen.getByText('Alpha').closest('.MuiChip-root');
+    expect(chip).toHaveStyle({ color: '#460D91' });
+  });
 });
