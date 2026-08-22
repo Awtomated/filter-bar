@@ -239,7 +239,7 @@ export function getChoiceId(choice) {
 
 export function getChoiceLabel(choice) {
   if (!choice) return '';
-  return choice.label || choice.title || choice.name || String(choice.id ?? '');
+  return choice.label || choice.title || choice.name || choice.email || String(choice.id ?? '');
 }
 
 export function makeFilter(fieldDef) {

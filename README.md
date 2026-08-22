@@ -80,8 +80,15 @@ shape:
 
 - A field is a **selection field** (renders as a searchable choice chip) when it has
   `field_key: "select"`, or exposes `options`/`fetch_url`.
-- A selection field is **multi-select** only when its default operator has `input_field: "select"`
-  **and** `input_type: "multiple"`; every other shape renders single-select.
+- Everywhere a field's value editor is driven by an explicit operator choice (the "Filter" builder,
+  and quick chips for fields with more than one operator), the widget itself — select vs. plain
+  text/number/date — follows the _currently selected operator's_ `input_field`, not just whether the
+  field exposes choices. A field can therefore expose a select for one operator (e.g. "Is") and a
+  plain text field for another (e.g. "Contains") on the same field.
+- A select renders as **multi-choice** only when the selected operator has `input_field: "select"`
+  **and** `input_type: "multiple"`; every other shape renders single-select. For a selection field
+  with only one operator, this is decided by that one (default) operator — see
+  `isMultiSelectionField`.
 - Fields whose name looks like a date (contains "date") and are listed in `most_used_filters` are
   auto-paired into a single date-range chip when a `start`/`estimate` field has an `end`/`due`
   counterpart (by name prefix, not a backend flag) — see `classifyDateField` if you need to match

@@ -24,6 +24,7 @@ function SelectValueInput({
   value,
   onChange,
   listboxSx,
+  multiple = false,
 }) {
   const [open, setOpen] = useState(false);
   const [options, setOptions] = useState(choices ?? []);
@@ -67,12 +68,17 @@ function SelectValueInput({
   return (
     <Autocomplete
       size='small'
+      multiple={multiple}
+      disableCloseOnSelect={multiple}
+      // Cap the visible tags to one — the rest collapse into a "+N" chip —
+      // so picking many options never grows the field's height.
+      limitTags={multiple ? 1 : undefined}
       open={open}
       onOpen={() => setOpen(true)}
       onClose={() => setOpen(false)}
       options={options}
       loading={loading && !choices}
-      value={value ?? null}
+      value={multiple ? value ?? [] : value ?? null}
       onChange={(_, newValue) => onChange(newValue)}
       getOptionLabel={getOptionLabel}
       isOptionEqualToValue={(opt, val) => opt?.id === val?.id}
@@ -103,6 +109,20 @@ function SelectValueInput({
         popper: { sx: { zIndex: 1400 } },
         paper: { sx: { zIndex: 99 } },
         listbox: { sx: listboxSx },
+        chip: {
+          variant: 'outlined',
+          sx: {
+            maxWidth: 120,
+            color: '#460D91',
+            borderColor: '#460D91',
+
+            '& .MuiChip-label': {
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            },
+          },
+        },
       }}
     />
   );
