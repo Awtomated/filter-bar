@@ -202,8 +202,7 @@ function DynamicFilterBarInner({
         flexWrap: 'wrap',
         alignItems: 'center',
         gap: `${tokens.gapSm}px`,
-        py: 1,
-        pb: 2,
+        p: 0,
       }}
     >
       {dateRangeGroups.map((group) => (

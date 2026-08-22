@@ -8,9 +8,12 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import SelectValueInput from './SelectValueInput';
 import { useFilterBarLabels, useFilterBarTokens } from '../tokens';
 
-// Renders the right value editor for a field+operator pair: an API/local
-// select when the field exposes choices, a date picker when the operator's
-// `input_field` is "date", otherwise a plain text/number field.
+// Renders the right value editor for a field+operator pair, driven by the
+// *selected operator's* `input_field` — not just whether the field happens
+// to expose choices — so a field with more than one operator (e.g. "Is" vs
+// "Contains") can switch between a select and a plain text field as the
+// user changes operator. `input_type: "multiple"` on that same operator
+// turns the select into a multi-choice picker.
 //
 // `onCommit`, if given, fires whenever the user's action on the current
 // widget is "complete" — immediately on picking a choice/date (there's
@@ -25,7 +28,10 @@ function ValueInput({ fieldDef, selectedOp, value, onChange, onCommit, fetcher }
     '& .MuiAutocomplete-option': { borderRadius: '8px', padding: tokens.menuItemPadding },
   };
 
-  if (fieldDef?.fetch_url) {
+  const inputField = selectedOp?.input_field;
+  const multiple = selectedOp?.input_type === 'multiple';
+
+  if (inputField === 'select' && fieldDef?.fetch_url) {
     return (
       <SelectValueInput
         fetcher={fetcher}
@@ -33,6 +39,7 @@ function ValueInput({ fieldDef, selectedOp, value, onChange, onCommit, fetcher }
         label={labels.valueLabel}
         placeholder={labels.valueLabel}
         value={value}
+        multiple={multiple}
         onChange={(newValue) => {
           onChange(newValue);
           onCommit?.(newValue);
@@ -41,7 +48,7 @@ function ValueInput({ fieldDef, selectedOp, value, onChange, onCommit, fetcher }
       />
     );
   }
-  if (fieldDef?.options?.length) {
+  if (inputField === 'select' && fieldDef?.options?.length) {
     const selectChoices = fieldDef.options.map((opt) => ({ ...opt, title: opt.label }));
     return (
       <SelectValueInput
@@ -50,6 +57,7 @@ function ValueInput({ fieldDef, selectedOp, value, onChange, onCommit, fetcher }
         label={labels.valueLabel}
         placeholder={labels.valueLabel}
         value={value}
+        multiple={multiple}
         onChange={(newValue) => {
           onChange(newValue);
           onCommit?.(newValue);
@@ -59,7 +67,6 @@ function ValueInput({ fieldDef, selectedOp, value, onChange, onCommit, fetcher }
     );
   }
 
-  const inputField = selectedOp?.input_field;
   if (inputField === 'date') {
     const dateValue = typeof value === 'string' && value ? dayjs(value) : null;
     const isValidDate = dateValue && dateValue.isValid() ? dateValue : null;
@@ -90,7 +97,10 @@ function ValueInput({ fieldDef, selectedOp, value, onChange, onCommit, fetcher }
       value={value ?? ''}
       placeholder={labels.valueLabel}
       onChange={(e) => onChange(e.target.value)}
-      onBlur={() => onCommit?.(value)}
+      onBlur={() => {
+        if (value === undefined || value === null || value === '') return;
+        onCommit?.(value);
+      }}
       slotProps={{ inputLabel: { shrink: true } }}
     />
   );
