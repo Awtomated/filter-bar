@@ -11,7 +11,13 @@ import { useFilterBarLabels, useFilterBarTokens } from '../tokens';
 // Renders the right value editor for a field+operator pair: an API/local
 // select when the field exposes choices, a date picker when the operator's
 // `input_field` is "date", otherwise a plain text/number field.
-function ValueInput({ fieldDef, selectedOp, value, onChange, fetcher }) {
+//
+// `onCommit`, if given, fires whenever the user's action on the current
+// widget is "complete" — immediately on picking a choice/date (there's
+// nothing more to wait for), or on blur for a plain text/number field
+// (so every keystroke doesn't commit). It's optional — callers that manage
+// their own explicit submit (e.g. the "Filter" builder) simply don't pass it.
+function ValueInput({ fieldDef, selectedOp, value, onChange, onCommit, fetcher }) {
   const tokens = useFilterBarTokens();
   const labels = useFilterBarLabels();
   const listboxSx = {
@@ -27,7 +33,10 @@ function ValueInput({ fieldDef, selectedOp, value, onChange, fetcher }) {
         label={labels.valueLabel}
         placeholder={labels.valueLabel}
         value={value}
-        onChange={onChange}
+        onChange={(newValue) => {
+          onChange(newValue);
+          onCommit?.(newValue);
+        }}
         listboxSx={listboxSx}
       />
     );
@@ -41,7 +50,10 @@ function ValueInput({ fieldDef, selectedOp, value, onChange, fetcher }) {
         label={labels.valueLabel}
         placeholder={labels.valueLabel}
         value={value}
-        onChange={onChange}
+        onChange={(newValue) => {
+          onChange(newValue);
+          onCommit?.(newValue);
+        }}
         listboxSx={listboxSx}
       />
     );
@@ -56,11 +68,12 @@ function ValueInput({ fieldDef, selectedOp, value, onChange, fetcher }) {
         <DatePicker
           label={labels.valueLabel}
           value={isValidDate}
-          onChange={(date) =>
-            onChange(
-              date && dayjs.isDayjs(date) && date.isValid() ? date.format('YYYY-MM-DD') : null
-            )
-          }
+          onChange={(date) => {
+            const iso =
+              date && dayjs.isDayjs(date) && date.isValid() ? date.format('YYYY-MM-DD') : null;
+            onChange(iso);
+            onCommit?.(iso);
+          }}
           slotProps={{ textField: { size: 'small', fullWidth: true } }}
         />
       </LocalizationProvider>
@@ -77,6 +90,7 @@ function ValueInput({ fieldDef, selectedOp, value, onChange, fetcher }) {
       value={value ?? ''}
       placeholder={labels.valueLabel}
       onChange={(e) => onChange(e.target.value)}
+      onBlur={() => onCommit?.(value)}
       slotProps={{ inputLabel: { shrink: true } }}
     />
   );

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Box, CircularProgress } from '@mui/material';
 import QuickFilterChip from './QuickFilterChip';
 import QuickFieldEditor from './QuickFieldEditor';
+import QuickOperatorEditor from './QuickOperatorEditor';
 import SelectionChoicesEditor from './SelectionChoicesEditor';
 import DateRangeGroupChip from './DateRangeGroupChip';
 import OtherFiltersBuilder from './OtherFiltersBuilder';
@@ -16,6 +17,7 @@ import {
   isDateLikeField,
   isMultiSelectionField,
   isSelectionField,
+  matchMostUsedField,
 } from '../utils';
 
 const DEFAULT_MAX_QUICK_CHIPS = 5;
@@ -64,17 +66,36 @@ function DynamicFilterBarInner({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterApiUrl]);
 
-  const choicesMapNames = new Set(Object.keys(choicesMap));
   const baseFilterFields = adaptApiConfig(filterConfig);
+
   const filterFields = applyChoicesMap(baseFilterFields, choicesMap);
 
   const mostUsedNames = filterConfig?.most_used_filters ?? [];
   const hasMostUsed = mostUsedNames.length > 0;
-  const mostUsedFieldDefs = hasMostUsed
-    ? mostUsedNames
-        .map((name) => filterFields.find((f) => f.name === name))
-        .filter((f) => Boolean(f) && !choicesMapNames.has(f.name))
-    : [];
+
+  // Each most_used_filters entry may name a field directly or one of its
+  // operators (see matchMostUsedField) — keep only the first match per
+  // field so a field referenced twice (e.g. by two different operators)
+  // isn't rendered as two chips, and remember which operator it was
+  // matched through so that operator becomes the field's preferred
+  // starting point instead of the field's own default_operator.
+  const seenMostUsedFieldNames = new Set();
+  const mostUsedMatches = mostUsedNames
+    .map((name) => matchMostUsedField(name, filterFields))
+    .filter((match) => Boolean(match))
+    .filter((match) => {
+      if (seenMostUsedFieldNames.has(match.fieldDef.name)) return false;
+      seenMostUsedFieldNames.add(match.fieldDef.name);
+      return true;
+    });
+
+  const mostUsedFieldDefs = mostUsedMatches.map((match) => match.fieldDef);
+  const mostUsedFieldNameSet = new Set(mostUsedFieldDefs.map((f) => f.name));
+  const mostUsedPreferredOperatorId = new Map(
+    mostUsedMatches
+      .filter((match) => match.operatorId)
+      .map((match) => [match.fieldDef.name, match.operatorId])
+  );
 
   const dateFieldDefs = mostUsedFieldDefs.filter(isDateLikeField);
   const allDateRangeGroups = buildDateRangeGroups(dateFieldDefs, filterFields);
@@ -93,65 +114,40 @@ function DynamicFilterBarInner({
   const nonDateMostUsedFieldDefs = mostUsedFieldDefs.filter(
     (f) => !dateGroupFieldNames.has(f.name) && !dateRangeOverflowFieldNames.has(f.name)
   );
-  // A most-used field that is itself a selection field renders as a
-  // selection chip (single or multi per isMultiSelectionField) instead of
-  // the generic operator+value editor.
-  const mostUsedSelectionFieldDefs = nonDateMostUsedFieldDefs.filter(isSelectionField);
-  const mostUsedQuickFieldDefs = nonDateMostUsedFieldDefs.filter((f) => !isSelectionField(f));
 
-  const choicesMapFieldDefs = filterFields.filter((f) => choicesMapNames.has(f.name));
-  const derivedSelectionFieldDefs = hasMostUsed
-    ? []
-    : filterFields.filter(
-        (f) =>
-          !choicesMapNames.has(f.name) && !dateGroupFieldNames.has(f.name) && isSelectionField(f)
-      );
-
-  // Cap the individually-rendered chips (everything but the trailing
-  // "Filter" chip) at maxQuickChips. choicesMap fields are an explicit,
-  // caller-controlled opt-in and are always shown; date-range, most-used,
-  // and auto-derived selection chips compete for whatever budget is left,
-  // in that priority order — anything that doesn't fit folds into the
-  // "Filter" chip instead of disappearing.
+  // The individually-rendered chips (everything but the trailing "Filter"
+  // chip) are capped at maxQuickChips in total, filled in priority order:
+  // date-range groups first, then most_used_filters entries (in the order
+  // given), then — to always keep the bar filled up to maxQuickChips —
+  // whichever remaining filterFields come first, regardless of whether
+  // they're a selection field (fetch_url/options) or a plain text/number
+  // field. Anything that doesn't fit folds into the "Filter" chip instead
+  // of disappearing.
   let chipBudget = Math.max(0, maxQuickChips - dateRangeGroups.length);
 
-  const visibleQuickFieldDefs = mostUsedQuickFieldDefs.slice(0, chipBudget);
-  chipBudget = Math.max(0, chipBudget - visibleQuickFieldDefs.length);
+  const visibleMostUsedFieldDefs = nonDateMostUsedFieldDefs.slice(0, chipBudget);
+  chipBudget = Math.max(0, chipBudget - visibleMostUsedFieldDefs.length);
 
-  const visibleMostUsedSelectionFieldDefs = mostUsedSelectionFieldDefs.slice(0, chipBudget);
-  chipBudget = Math.max(0, chipBudget - visibleMostUsedSelectionFieldDefs.length);
+  const backfillCandidateFieldDefs = filterFields.filter(
+    (f) =>
+      !mostUsedFieldNameSet.has(f.name) &&
+      !dateGroupFieldNames.has(f.name) &&
+      !dateRangeOverflowFieldNames.has(f.name)
+  );
+  const visibleBackfillFieldDefs = backfillCandidateFieldDefs.slice(0, chipBudget);
 
-  const visibleDerivedSelectionFieldDefs = derivedSelectionFieldDefs.slice(0, chipBudget);
+  const quickChipFieldDefs = [...visibleMostUsedFieldDefs, ...visibleBackfillFieldDefs];
+  const quickChipFieldNameSet = new Set(quickChipFieldDefs.map((f) => f.name));
 
-  const overflowFieldNames = new Set([
-    ...Array.from(dateRangeOverflowFieldNames),
-    ...mostUsedQuickFieldDefs.slice(visibleQuickFieldDefs.length).map((f) => f.name),
-    ...mostUsedSelectionFieldDefs
-      .slice(visibleMostUsedSelectionFieldDefs.length)
-      .map((f) => f.name),
-    ...derivedSelectionFieldDefs.slice(visibleDerivedSelectionFieldDefs.length).map((f) => f.name),
-  ]);
+  // A quick-chip field that is itself a selection field renders via the
+  // choice-list editor (single or multi per isMultiSelectionField) instead
+  // of the generic operator+value editor.
+  const regularMostUsedFieldDefs = quickChipFieldDefs.filter((f) => !isSelectionField(f));
+  const selectionFieldDefs = quickChipFieldDefs.filter(isSelectionField);
 
-  const regularMostUsedFieldDefs = visibleQuickFieldDefs;
-  const selectionFieldDefs = [
-    ...choicesMapFieldDefs,
-    ...visibleMostUsedSelectionFieldDefs,
-    ...visibleDerivedSelectionFieldDefs,
-  ];
-
-  const otherFieldDefs = hasMostUsed
-    ? filterFields.filter(
-        (f) =>
-          !choicesMapNames.has(f.name) &&
-          !dateGroupFieldNames.has(f.name) &&
-          (!mostUsedNames.includes(f.name) || overflowFieldNames.has(f.name))
-      )
-    : filterFields.filter(
-        (f) =>
-          !choicesMapNames.has(f.name) &&
-          !dateGroupFieldNames.has(f.name) &&
-          (!isSelectionField(f) || overflowFieldNames.has(f.name))
-      );
+  const otherFieldDefs = filterFields.filter(
+    (f) => !dateGroupFieldNames.has(f.name) && !quickChipFieldNameSet.has(f.name)
+  );
   const otherFieldNameSet = new Set(otherFieldDefs.map((f) => f.name));
 
   function applyQuickFilter(fieldName, filterObj) {
@@ -225,26 +221,35 @@ function DynamicFilterBarInner({
 
       {regularMostUsedFieldDefs.map((fieldDef) => {
         const appliedFilter = filters.find((f) => f.field === fieldDef.name) ?? null;
+        const hasMultipleOperators = (fieldDef.operators ?? []).length > 1;
         return (
           <QuickFilterChip
             key={fieldDef.name}
             label={fieldDef.label}
             count={appliedFilter ? 1 : 0}
             onClear={() => clearQuickFilter(fieldDef.name)}
-            width={280}
+            width={hasMultipleOperators ? 'max-content' : 260}
           >
-            {({ closePopover, openKey }) => (
-              <QuickFieldEditor
-                key={openKey}
-                fieldDef={fieldDef}
-                appliedFilter={appliedFilter}
-                fetcher={fetcher}
-                onApply={(filterObj) => {
-                  applyQuickFilter(fieldDef.name, filterObj);
-                  closePopover();
-                }}
-              />
-            )}
+            {({ openKey }) =>
+              hasMultipleOperators ? (
+                <QuickOperatorEditor
+                  key={openKey}
+                  fieldDef={fieldDef}
+                  appliedFilter={appliedFilter}
+                  preferredOperatorId={mostUsedPreferredOperatorId.get(fieldDef.name)}
+                  fetcher={fetcher}
+                  onApply={(filterObj) => applyQuickFilter(fieldDef.name, filterObj)}
+                />
+              ) : (
+                <QuickFieldEditor
+                  key={openKey}
+                  fieldDef={fieldDef}
+                  appliedFilter={appliedFilter}
+                  fetcher={fetcher}
+                  onApply={(filterObj) => applyQuickFilter(fieldDef.name, filterObj)}
+                />
+              )
+            }
           </QuickFilterChip>
         );
       })}
@@ -253,25 +258,37 @@ function DynamicFilterBarInner({
         const appliedFilter = filters.find((f) => f.field === fieldDef.name) ?? null;
         const multiple = isMultiSelectionField(fieldDef);
         const count = multiple ? appliedFilter?.value?.length ?? 0 : appliedFilter?.value ? 1 : 0;
+        const hasMultipleOperators = (fieldDef.operators ?? []).length > 1;
         return (
           <QuickFilterChip
             key={fieldDef.name}
             label={fieldDef.label}
             count={count}
             onClear={() => clearQuickFilter(fieldDef.name)}
-            width={280}
+            width={hasMultipleOperators ? 'max-content' : 260}
           >
-            {({ openKey, closePopover }) => (
-              <SelectionChoicesEditor
-                key={openKey}
-                fieldDef={fieldDef}
-                appliedFilter={appliedFilter}
-                multiple={multiple}
-                fetcher={fetcher}
-                onApply={(filterObj) => applyQuickFilter(fieldDef.name, filterObj)}
-                onSelectSingle={multiple ? undefined : closePopover}
-              />
-            )}
+            {({ openKey, closePopover }) =>
+              hasMultipleOperators ? (
+                <QuickOperatorEditor
+                  key={openKey}
+                  fieldDef={fieldDef}
+                  appliedFilter={appliedFilter}
+                  preferredOperatorId={mostUsedPreferredOperatorId.get(fieldDef.name)}
+                  fetcher={fetcher}
+                  onApply={(filterObj) => applyQuickFilter(fieldDef.name, filterObj)}
+                />
+              ) : (
+                <SelectionChoicesEditor
+                  key={openKey}
+                  fieldDef={fieldDef}
+                  appliedFilter={appliedFilter}
+                  multiple={multiple}
+                  fetcher={fetcher}
+                  onApply={(filterObj) => applyQuickFilter(fieldDef.name, filterObj)}
+                  onSelectSingle={multiple ? undefined : closePopover}
+                />
+              )
+            }
           </QuickFilterChip>
         );
       })}
@@ -282,6 +299,7 @@ function DynamicFilterBarInner({
           count={otherActiveCount}
           onClear={() => applyOtherFilters([])}
           width={580}
+          padding={0}
         >
           {({ closePopover, openKey }) => (
             <OtherFiltersBuilder

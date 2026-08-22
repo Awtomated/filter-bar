@@ -12,7 +12,15 @@ import { useFilterBarLabels, useFilterBarTokens } from '../tokens';
 // chips (one per most-used field) and its trailing "Filter" chip. Clicking
 // the chip opens `children` in a popover; a count badge and inline clear-X
 // are shown once a filter is active.
-function QuickFilterChip({ label, count = 0, onClear, children, width = 260, displayLabel }) {
+function QuickFilterChip({
+  label,
+  count = 0,
+  onClear,
+  children,
+  width = 260,
+  displayLabel,
+  padding = 1.5,
+}) {
   const tokens = useFilterBarTokens();
   const labels = useFilterBarLabels();
   const [anchorEl, setAnchorEl] = useState(null);
@@ -104,7 +112,7 @@ function QuickFilterChip({ label, count = 0, onClear, children, width = 260, dis
           paper: { sx: { borderRadius: `${tokens.popoverRadius}px`, mt: '4px' } },
         }}
       >
-        <Box sx={{ p: 1.5, width }}>{children({ closePopover, openKey })}</Box>
+        <Box sx={{ p: padding, width }}>{children({ closePopover, openKey })}</Box>
       </Popover>
     </>
   );

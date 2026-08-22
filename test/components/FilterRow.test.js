@@ -167,4 +167,91 @@ describe('FilterRow', () => {
     await userEvent.click(getSelectByLabel('Operator'));
     expect(screen.getAllByRole('option')).toHaveLength(2);
   });
+
+  it('hides the remove icon when showRemove is false', () => {
+    const nameField = field({});
+    const filter = { id: '1', field: 'name', operatorId: 'name__icontains', value: '' };
+    render(
+      <FilterRow
+        filter={filter}
+        filterFields={[nameField]}
+        onChange={() => {}}
+        fetcher={jest.fn()}
+        showRemove={false}
+      />
+    );
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+  });
+
+  it('hides the field select when showField is false', () => {
+    const nameField = field({});
+    const filter = { id: '1', field: 'name', operatorId: 'name__icontains', value: '' };
+    render(
+      <FilterRow
+        filter={filter}
+        filterFields={[nameField]}
+        onRemove={() => {}}
+        onChange={() => {}}
+        fetcher={jest.fn()}
+        showField={false}
+      />
+    );
+    expect(screen.queryByText('Field')).not.toBeInTheDocument();
+    expect(getSelectByLabel('Operator')).toBeInTheDocument();
+  });
+
+  it('filters the Field dropdown options by a search box', async () => {
+    const nameField = field({ name: 'name', label: 'Name' });
+    const statusField = field({
+      name: 'status',
+      label: 'Status',
+      operators: [op({ query_param: 'status' })],
+    });
+    const filter = { id: '1', field: 'name', operatorId: 'name__icontains', value: '' };
+    render(
+      <FilterRow
+        filter={filter}
+        filterFields={[nameField, statusField]}
+        onRemove={() => {}}
+        onChange={() => {}}
+        fetcher={jest.fn()}
+      />
+    );
+    await userEvent.click(getSelectByLabel('Field'));
+    expect(screen.getByRole('option', { name: 'Name' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Status' })).toBeInTheDocument();
+
+    await userEvent.type(screen.getByPlaceholderText('Search field...'), 'stat');
+    expect(screen.queryByRole('option', { name: 'Name' })).not.toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Status' })).toBeInTheDocument();
+  });
+
+  it('keeps showing the selected field label after filtering it out of the dropdown', async () => {
+    const nameField = field({ name: 'name', label: 'Name' });
+    const statusField = field({
+      name: 'status',
+      label: 'Status',
+      operators: [op({ query_param: 'status' })],
+    });
+    const filter = { id: '1', field: 'name', operatorId: 'name__icontains', value: '' };
+    render(
+      <FilterRow
+        filter={filter}
+        filterFields={[nameField, statusField]}
+        onRemove={() => {}}
+        onChange={() => {}}
+        fetcher={jest.fn()}
+      />
+    );
+    await userEvent.click(getSelectByLabel('Field'));
+    await userEvent.type(screen.getByPlaceholderText('Search field...'), 'stat');
+    // MUI marks the rest of the page aria-hidden while the menu's still
+    // open, so query with `hidden: true` to see the (still-open) trigger's
+    // displayed text rather than requiring it to close first.
+    const formControl = screen
+      .getAllByText('Field')
+      .find((el) => el.tagName === 'LABEL')
+      .closest('.MuiFormControl-root');
+    expect(within(formControl).getByRole('combobox', { hidden: true })).toHaveTextContent('Name');
+  });
 });

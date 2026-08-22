@@ -15,6 +15,7 @@ import {
   isMultiSelectionField,
   isSelectionField,
   makeFilter,
+  matchMostUsedField,
   toCalendarDay,
   toIsoDay,
 } from '../src/utils';
@@ -464,5 +465,68 @@ describe('makeFilter', () => {
     const a = makeFilter(fieldDef);
     const b = makeFilter(fieldDef);
     expect(a.id).not.toBe(b.id);
+  });
+});
+
+describe('matchMostUsedField', () => {
+  const emailField = field({
+    name: 'email',
+    label: 'Email',
+    operators: [
+      op({ label: 'Contains', query_param: 'email__icontains', value: 'icontains' }),
+      op({ label: 'Starts with', query_param: 'email__istartswith', value: 'istartswith' }),
+    ],
+  });
+  const companiesField = field({
+    name: 'companies',
+    label: 'Company',
+    fetch_url: '/api/crm/companies/choices/',
+    operators: [op({ label: 'Equals', query_param: 'companies', value: 'exact' })],
+  });
+  const nameIsEmptyOp = op({
+    input_type: 'none',
+    query_param: 'name__isnull',
+    query_value: 'true',
+  });
+  const nameField = field({
+    name: 'name',
+    label: 'Name',
+    operators: [
+      op({ label: 'Contains', query_param: 'name__icontains', value: 'icontains' }),
+      nameIsEmptyOp,
+    ],
+  });
+  const filterFields = [emailField, companiesField, nameField];
+
+  it('matches a bare field name directly, with no preferred operator', () => {
+    expect(matchMostUsedField('companies', filterFields)).toEqual({
+      fieldDef: companiesField,
+      operatorId: null,
+    });
+  });
+
+  it("matches an entry naming one of a field's operators by query_param, returning that operator's id", () => {
+    expect(matchMostUsedField('email__istartswith', filterFields)).toEqual({
+      fieldDef: emailField,
+      operatorId: 'email__istartswith',
+    });
+  });
+
+  it('matches a "none" input_type operator by its full operator id (query_param:query_value)', () => {
+    expect(matchMostUsedField('name__isnull:true', filterFields)).toEqual({
+      fieldDef: nameField,
+      operatorId: 'name__isnull:true',
+    });
+  });
+
+  it('returns null when nothing matches', () => {
+    expect(matchMostUsedField('nonexistent', filterFields)).toBeNull();
+  });
+
+  it('prefers a direct field-name match over a coincidentally-equal operator query_param', () => {
+    // companies' only operator's query_param is also "companies" — the
+    // direct field match must win so the result carries no operator
+    // override (there's nothing to override with; it's the same operator).
+    expect(matchMostUsedField('companies', filterFields).operatorId).toBeNull();
   });
 });
