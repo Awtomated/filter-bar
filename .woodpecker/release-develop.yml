@@ -12,7 +12,6 @@ steps:
         from_secret: GH_TOKEN
     commands:
       - apk add --no-cache git
-      - echo "//npm.awtomated.com/:_authToken=${NPM_TOKEN}" >> .npmrc
       - yarn install --frozen-lockfile
       - git remote set-url origin
         "https://x-access-token:${GH_TOKEN}@github.com/Awtomated/filter-bar.git"

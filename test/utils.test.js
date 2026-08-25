@@ -12,6 +12,7 @@ import {
   getDefaultOperatorId,
   getOperatorId,
   isDateLikeField,
+  isEmptyFilterValue,
   isMultiSelectionField,
   isSelectionField,
   makeFilter,
@@ -443,6 +444,28 @@ describe('getChoiceId / getChoiceLabel', () => {
     expect(getChoiceLabel({ title: 'T', name: 'N', id: 1 })).toBe('T');
     expect(getChoiceLabel({ name: 'N', id: 1 })).toBe('N');
     expect(getChoiceLabel({ id: 1 })).toBe('1');
+  });
+});
+
+describe('isEmptyFilterValue', () => {
+  it.each([
+    ['null', null],
+    ['undefined', undefined],
+    ['an empty string', ''],
+    ['a whitespace-only string', '   '],
+    ['an empty array', []],
+  ])('returns true for %s', (_label, value) => {
+    expect(isEmptyFilterValue(value)).toBe(true);
+  });
+
+  it.each([
+    ['a non-empty string', 'acme'],
+    ['zero', 0],
+    ['false', false],
+    ['a non-empty array', [{ id: 1 }]],
+    ['an object', { id: 1 }],
+  ])('returns false for %s', (_label, value) => {
+    expect(isEmptyFilterValue(value)).toBe(false);
   });
 });
 

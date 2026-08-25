@@ -72,6 +72,40 @@ describe('QuickFieldEditor', () => {
     );
   });
 
+  it('does not apply a filter when the field is focused and blurred without a value', async () => {
+    const onApply = jest.fn();
+    const fieldDef = field({});
+    render(
+      <QuickFieldEditor
+        fieldDef={fieldDef}
+        appliedFilter={null}
+        onApply={onApply}
+        fetcher={jest.fn()}
+      />
+    );
+    await userEvent.click(screen.getByLabelText('Value'));
+    await userEvent.tab();
+    expect(onApply).not.toHaveBeenCalled();
+  });
+
+  it('does not re-apply when a typed value is cleared back to empty before blur', async () => {
+    const onApply = jest.fn();
+    const fieldDef = field({});
+    render(
+      <QuickFieldEditor
+        fieldDef={fieldDef}
+        appliedFilter={null}
+        onApply={onApply}
+        fetcher={jest.fn()}
+      />
+    );
+    const input = screen.getByLabelText('Value');
+    await userEvent.type(input, 'acme');
+    await userEvent.clear(input);
+    await userEvent.tab();
+    expect(onApply).not.toHaveBeenCalled();
+  });
+
   it('preserves the applied filter id when re-committing an edited filter', async () => {
     const onApply = jest.fn();
     const fieldDef = field({});
