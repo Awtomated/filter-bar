@@ -242,6 +242,13 @@ export function getChoiceLabel(choice) {
   return choice.label || choice.title || choice.name || choice.email || String(choice.id ?? '');
 }
 
+export function isEmptyFilterValue(value) {
+  if (value == null) return true;
+  if (typeof value === 'string') return value.trim() === '';
+  if (Array.isArray(value)) return value.length === 0;
+  return false;
+}
+
 export function makeFilter(fieldDef) {
   return {
     id: crypto.randomUUID(),

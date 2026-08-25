@@ -15,10 +15,6 @@
     "dist"
   ],
   "sideEffects": false,
-  "publishConfig": {
-    "registry": "https://npm.awtomated.com/",
-    "access": "restricted"
-  },
   "repository": {
     "type": "git",
     "url": "https://github.com/Awtomated/filter-bar.git"

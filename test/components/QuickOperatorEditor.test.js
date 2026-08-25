@@ -147,6 +147,26 @@ describe('QuickOperatorEditor', () => {
     );
   });
 
+  it('does not apply a filter when the value field is focused and blurred empty after switching operators', async () => {
+    const onApply = jest.fn();
+    const fieldDef = field({});
+    const appliedFilter = { id: 'f1', field: 'name', operatorId: 'name__icontains', value: 'acme' };
+    render(
+      <QuickOperatorEditor
+        fieldDef={fieldDef}
+        appliedFilter={appliedFilter}
+        onApply={onApply}
+        fetcher={jest.fn()}
+      />
+    );
+    await userEvent.click(getSelectByLabel('Operator'));
+    await userEvent.click(screen.getByRole('option', { name: 'Equals' }));
+    expect(screen.getByLabelText('Value')).toHaveValue('');
+    await userEvent.click(screen.getByLabelText('Value'));
+    await userEvent.tab();
+    expect(onApply).not.toHaveBeenCalled();
+  });
+
   it('preserves the applied filter id when re-committing an edited filter', async () => {
     const onApply = jest.fn();
     const fieldDef = field({});
