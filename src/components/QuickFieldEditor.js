@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 // these must not be deep `@mui/material/*`-style imports.
 import { Box } from '@mui/material';
 import ValueInput from './ValueInput';
-import { getDefaultOperator, getDefaultOperatorId } from '../utils';
+import { getDefaultOperator, getDefaultOperatorId, isEmptyFilterValue } from '../utils';
 
 // Used only for fields with a single (or no) operator — DynamicFilterBar
 // routes fields with more than one operator to QuickOperatorEditor instead,
@@ -36,6 +36,11 @@ function QuickFieldEditor({ fieldDef, appliedFilter, onApply, fetcher }) {
 
   if (!showValue) return null;
 
+  function commitValue(newValue) {
+    if (isEmptyFilterValue(newValue)) return;
+    commit(newValue);
+  }
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
       <ValueInput
@@ -43,7 +48,7 @@ function QuickFieldEditor({ fieldDef, appliedFilter, onApply, fetcher }) {
         selectedOp={selectedOp}
         value={value}
         onChange={setValue}
-        onCommit={commit}
+        onCommit={commitValue}
         fetcher={fetcher}
       />
     </Box>

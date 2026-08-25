@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import FilterRow from './FilterRow';
-import { getDefaultOperatorId, getOperatorId } from '../utils';
+import { getDefaultOperatorId, getOperatorId, isEmptyFilterValue } from '../utils';
 
 // Quick-chip editor for a field that exposes more than one operator — reuses
 // FilterRow (stripped of the remove icon and field select, since the field
@@ -34,6 +34,9 @@ function QuickOperatorEditor({ fieldDef, appliedFilter, preferredOperatorId, onA
   }
 
   function handleCommitValue(newValue) {
+    // A blank value means there's nothing to filter on — leaving the value
+    // field empty must not apply an empty filter or fire a backend request.
+    if (isEmptyFilterValue(newValue)) return;
     onApply({ ...filter, value: newValue });
   }
 
