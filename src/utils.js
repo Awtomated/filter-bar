@@ -1,5 +1,29 @@
+import dayjs from 'dayjs';
+// eslint-disable-next-line import/extensions
+import utc from 'dayjs/plugin/utc.js';
+// eslint-disable-next-line import/extensions
+import timezonePlugin from 'dayjs/plugin/timezone.js';
+
+dayjs.extend(utc);
+dayjs.extend(timezonePlugin);
+
+export function calendarDayToIso(day) {
+  if (!day || !dayjs.isDayjs(day) || !day.isValid()) return null;
+  return dayjs.utc(day.format('YYYY-MM-DD')).toISOString();
+}
+
+export function isoToCalendarDay(iso, timezone) {
+  if (!iso) return null;
+  const utcDate = dayjs.utc(iso);
+  return utcDate.isValid() ? dayjs.tz(utcDate.format('YYYY-MM-DD'), timezone) : null;
+}
+
 export function getOperatorId(op) {
-  return op.input_type === 'none' ? `${op.query_param}:${op.query_value ?? ''}` : op.query_param;
+  if (op.input_type === 'none') return `${op.query_param}:${op.query_value ?? ''}`;
+  // A range-shaped operator (e.g. "Between") has no single query_param of
+  // its own — fall back to its value so it still resolves to a stable,
+  // non-undefined id instead of leaving the operator <Select> blank.
+  return op.query_param ?? op.value;
 }
 
 export function adaptApiConfig(filterConfig) {
@@ -93,6 +117,11 @@ export function isEmptyFilterValue(value) {
   if (value == null) return true;
   if (typeof value === 'string') return value.trim() === '';
   if (Array.isArray(value)) return value.length === 0;
+  // A range ("Between") value is only submittable once both ends are set —
+  // e.g. a range picker's "Reset" shortcut clears both back to null.
+  if (typeof value === 'object' && 'start' in value && 'end' in value) {
+    return !value.start || !value.end;
+  }
   return false;
 }
 
@@ -122,6 +151,12 @@ export function buildQueryParams(filters, filterFields) {
         params[opDef.query_param] = raw
           .map((item) => (fieldDef?.options?.length ? item.value : item.id))
           .join(',');
+      } else if (raw !== null && typeof raw === 'object' && 'start' in raw && 'end' in raw) {
+        // A range-shaped ("Between") value — keyed by the operator's own
+        // query_params (plural) name, since it has no single query_param.
+        const key = opDef.query_params ?? opDef.query_param;
+        if (!key || !raw.start || !raw.end) return;
+        params[key] = `${raw.start},${raw.end}`;
       } else if (raw !== null && typeof raw === 'object' && 'id' in raw) {
         params[opDef.query_param] = fieldDef?.options?.length ? String(raw.value) : String(raw.id);
       } else {

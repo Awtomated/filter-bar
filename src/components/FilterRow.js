@@ -148,6 +148,7 @@ function FilterRow({
             fetcher={fetcher}
             timezone={timezone}
             dateFormat={dateFormat}
+            dateDisplay='field'
           />
         </Box>
       )}

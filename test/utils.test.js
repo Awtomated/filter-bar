@@ -1,7 +1,9 @@
+import dayjs from 'dayjs';
 import {
   adaptApiConfig,
   applyChoicesMap,
   buildQueryParams,
+  calendarDayToIso,
   getChoiceId,
   getChoiceLabel,
   getDefaultOperator,
@@ -9,6 +11,7 @@ import {
   getOperatorId,
   isEmptyFilterValue,
   isMultiSelectionField,
+  isoToCalendarDay,
   isSelectionField,
   makeFilter,
   matchMostUsedField,
@@ -37,6 +40,28 @@ function field(overrides) {
   };
 }
 
+describe('calendarDayToIso / isoToCalendarDay', () => {
+  it('serializes a dayjs day as UTC-midnight ISO and parses it back to the same calendar day', () => {
+    const day = dayjs.tz('2024-03-15', 'America/New_York');
+    const iso = calendarDayToIso(day);
+    expect(iso).toBe('2024-03-15T00:00:00.000Z');
+    const roundTripped = isoToCalendarDay(iso, 'America/New_York');
+    expect(roundTripped.format('YYYY-MM-DD')).toBe('2024-03-15');
+  });
+
+  it('returns null for a nullish/invalid day or iso string', () => {
+    expect(calendarDayToIso(null)).toBeNull();
+    expect(calendarDayToIso(dayjs('not-a-date'))).toBeNull();
+    expect(isoToCalendarDay(null, 'UTC')).toBeNull();
+    expect(isoToCalendarDay('not-a-date', 'UTC')).toBeNull();
+  });
+
+  it('keeps the same calendar day regardless of timezone, rather than rolling it back a day west of UTC', () => {
+    const day = isoToCalendarDay('2024-03-15T00:00:00.000Z', 'America/Los_Angeles');
+    expect(day.format('YYYY-MM-DD')).toBe('2024-03-15');
+  });
+});
+
 describe('getOperatorId', () => {
   it('keys "none" operators by query_param + query_value so is-empty/is-not-empty do not collide', () => {
     const isEmpty = op({ input_type: 'none', query_param: 'name__isnull', query_value: 'true' });
@@ -50,6 +75,15 @@ describe('getOperatorId', () => {
 
   it('keys every other operator by query_param alone', () => {
     expect(getOperatorId(op({ query_param: 'name__icontains' }))).toBe('name__icontains');
+  });
+
+  it('falls back to value when query_param is absent (e.g. a range-shaped "Between" operator)', () => {
+    const between = op({
+      value: 'between',
+      query_param: undefined,
+      query_params: 'startdate_range',
+    });
+    expect(getOperatorId(between)).toBe('between');
   });
 });
 
@@ -155,6 +189,55 @@ describe('buildQueryParams', () => {
       { id: '1', field: 'archived', operatorId: getOperatorId(noneFields[0].operators[0]) },
     ];
     expect(buildQueryParams(filters, noneFields)).toEqual({ archived__isnull: 'false' });
+  });
+
+  it('serializes a range ("Between") value as a comma-joined pair under the operator\'s query_params', () => {
+    const rangeFields = [
+      field({
+        name: 'startdate',
+        operators: [
+          op({
+            label: 'Between',
+            value: 'between',
+            query_param: undefined,
+            query_params: 'startdate_range',
+            input_type: 'range',
+            input_field: 'date',
+          }),
+        ],
+      }),
+    ];
+    const filters = [
+      {
+        id: '1',
+        field: 'startdate',
+        operatorId: 'between',
+        value: { start: '2024-03-01T00:00:00.000Z', end: '2024-03-10T00:00:00.000Z' },
+      },
+    ];
+    expect(buildQueryParams(filters, rangeFields)).toEqual({
+      startdate_range: '2024-03-01T00:00:00.000Z,2024-03-10T00:00:00.000Z',
+    });
+  });
+
+  it('skips a range value that is missing either end', () => {
+    const rangeFields = [
+      field({
+        name: 'startdate',
+        operators: [
+          op({
+            value: 'between',
+            query_param: undefined,
+            query_params: 'startdate_range',
+            input_type: 'range',
+          }),
+        ],
+      }),
+    ];
+    const filters = [
+      { id: '1', field: 'startdate', operatorId: 'between', value: { start: null, end: null } },
+    ];
+    expect(buildQueryParams(filters, rangeFields)).toEqual({});
   });
 });
 
@@ -313,8 +396,17 @@ describe('isEmptyFilterValue', () => {
     ['false', false],
     ['a non-empty array', [{ id: 1 }]],
     ['an object', { id: 1 }],
+    ['a complete range', { start: '2024-03-01', end: '2024-03-10' }],
   ])('returns false for %s', (_label, value) => {
     expect(isEmptyFilterValue(value)).toBe(false);
+  });
+
+  it.each([
+    ['both ends null (e.g. a range picker\'s "Reset")', { start: null, end: null }],
+    ['only the start set', { start: '2024-03-01', end: null }],
+    ['only the end set', { start: null, end: '2024-03-10' }],
+  ])('returns true for a range value with %s', (_label, value) => {
+    expect(isEmptyFilterValue(value)).toBe(true);
   });
 });
 
