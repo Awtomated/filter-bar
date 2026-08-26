@@ -147,7 +147,7 @@ describe('DynamicFilterBar', () => {
     expect(onApply).toHaveBeenLastCalledWith({});
   });
 
-  it('renders a date-range chip for a paired start/end most-used date field', async () => {
+  it('renders a most-used date field as its own quick chip, opening the date field in its popover like any other field', async () => {
     const fetcher = jest.fn().mockResolvedValue({
       data: makeConfig({
         filters: {
@@ -164,14 +164,28 @@ describe('DynamicFilterBar', () => {
               },
             ],
           },
-          enddate: {
-            field: 'enddate',
-            label: 'End Date',
+        },
+        most_used_filters: ['startdate'],
+      }),
+    });
+    render(<DynamicFilterBar filterApiUrl='/api/config' fetcher={fetcher} />);
+    const chip = await screen.findByText('Start Date');
+    await userEvent.click(chip);
+    expect(screen.getByRole('group', { name: 'Value' })).toBeInTheDocument();
+  });
+
+  it('renders the date field picker in the given dateFormat and still applies the correct ISO value', async () => {
+    const fetcher = jest.fn().mockResolvedValue({
+      data: makeConfig({
+        filters: {
+          startdate: {
+            field: 'startdate',
+            label: 'Start Date',
             operators: [
               {
-                label: 'To',
-                value: 'lte',
-                query_param: 'enddate__lte',
+                label: 'From',
+                value: 'gte',
+                query_param: 'startdate__gte',
                 input_type: 'single',
                 input_field: 'date',
               },
@@ -181,8 +195,26 @@ describe('DynamicFilterBar', () => {
         most_used_filters: ['startdate'],
       }),
     });
-    render(<DynamicFilterBar filterApiUrl='/api/config' fetcher={fetcher} />);
-    expect(await screen.findByText('Date Range')).toBeInTheDocument();
+    const onApply = jest.fn();
+    render(
+      <DynamicFilterBar
+        filterApiUrl='/api/config'
+        fetcher={fetcher}
+        onApply={onApply}
+        timezone='UTC'
+        dateFormat='DD-MM-YYYY'
+      />
+    );
+    const chip = await screen.findByText('Start Date');
+    await userEvent.click(chip);
+
+    // dateFormat='DD-MM-YYYY' puts the Day section first, with "-" separators.
+    const daySection = screen.getByRole('spinbutton', { name: 'Day' });
+    expect(daySection).toBeInTheDocument();
+    await userEvent.click(daySection);
+    await userEvent.keyboard('15032024');
+
+    expect(onApply).toHaveBeenLastCalledWith({ startdate__gte: '2024-03-15T00:00:00.000Z' });
   });
 
   it('applies and clears filters via the trailing "Filter" builder chip', async () => {

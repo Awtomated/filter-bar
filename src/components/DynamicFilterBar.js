@@ -6,15 +6,12 @@ import QuickFilterChip from './QuickFilterChip';
 import QuickFieldEditor from './QuickFieldEditor';
 import QuickOperatorEditor from './QuickOperatorEditor';
 import SelectionChoicesEditor from './SelectionChoicesEditor';
-import DateRangeGroupChip from './DateRangeGroupChip';
 import OtherFiltersBuilder from './OtherFiltersBuilder';
 import { DynamicFilterProvider, useFilterBarLabels, useFilterBarTokens } from '../tokens';
 import {
   adaptApiConfig,
   applyChoicesMap,
-  buildDateRangeGroups,
   buildQueryParams,
-  isDateLikeField,
   isMultiSelectionField,
   isSelectionField,
   matchMostUsedField,
@@ -30,6 +27,7 @@ function DynamicFilterBarInner({
   appliedFilters = [],
   onFiltersChange,
   timezone,
+  dateFormat,
   maxQuickChips = DEFAULT_MAX_QUICK_CHIPS,
 }) {
   const resolvedTimezone = timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -97,43 +95,19 @@ function DynamicFilterBarInner({
       .map((match) => [match.fieldDef.name, match.operatorId])
   );
 
-  const dateFieldDefs = mostUsedFieldDefs.filter(isDateLikeField);
-  const allDateRangeGroups = buildDateRangeGroups(dateFieldDefs, filterFields);
-  // Cap date-range groups to the overall chip budget too — otherwise they
-  // could alone exceed maxQuickChips while the rest of the budget logic
-  // below assumes they never do.
-  const dateRangeGroups = allDateRangeGroups.slice(0, maxQuickChips);
-  const dateRangeOverflow = allDateRangeGroups.slice(maxQuickChips);
-  const dateGroupFieldNames = new Set(
-    dateRangeGroups.flatMap((g) => [g.startField.name, g.endField.name])
-  );
-  const dateRangeOverflowFieldNames = new Set(
-    dateRangeOverflow.flatMap((g) => [g.startField.name, g.endField.name])
-  );
-
-  const nonDateMostUsedFieldDefs = mostUsedFieldDefs.filter(
-    (f) => !dateGroupFieldNames.has(f.name) && !dateRangeOverflowFieldNames.has(f.name)
-  );
-
   // The individually-rendered chips (everything but the trailing "Filter"
   // chip) are capped at maxQuickChips in total, filled in priority order:
-  // date-range groups first, then most_used_filters entries (in the order
-  // given), then — to always keep the bar filled up to maxQuickChips —
-  // whichever remaining filterFields come first, regardless of whether
-  // they're a selection field (fetch_url/options) or a plain text/number
-  // field. Anything that doesn't fit folds into the "Filter" chip instead
-  // of disappearing.
-  let chipBudget = Math.max(0, maxQuickChips - dateRangeGroups.length);
+  // most_used_filters entries (in the order given), then — to always keep
+  // the bar filled up to maxQuickChips — whichever remaining filterFields
+  // come first, regardless of whether they're a selection field
+  // (fetch_url/options) or a plain text/number/date field. Anything that
+  // doesn't fit folds into the "Filter" chip instead of disappearing.
+  let chipBudget = maxQuickChips;
 
-  const visibleMostUsedFieldDefs = nonDateMostUsedFieldDefs.slice(0, chipBudget);
+  const visibleMostUsedFieldDefs = mostUsedFieldDefs.slice(0, chipBudget);
   chipBudget = Math.max(0, chipBudget - visibleMostUsedFieldDefs.length);
 
-  const backfillCandidateFieldDefs = filterFields.filter(
-    (f) =>
-      !mostUsedFieldNameSet.has(f.name) &&
-      !dateGroupFieldNames.has(f.name) &&
-      !dateRangeOverflowFieldNames.has(f.name)
-  );
+  const backfillCandidateFieldDefs = filterFields.filter((f) => !mostUsedFieldNameSet.has(f.name));
   const visibleBackfillFieldDefs = backfillCandidateFieldDefs.slice(0, chipBudget);
 
   const quickChipFieldDefs = [...visibleMostUsedFieldDefs, ...visibleBackfillFieldDefs];
@@ -145,9 +119,7 @@ function DynamicFilterBarInner({
   const regularMostUsedFieldDefs = quickChipFieldDefs.filter((f) => !isSelectionField(f));
   const selectionFieldDefs = quickChipFieldDefs.filter(isSelectionField);
 
-  const otherFieldDefs = filterFields.filter(
-    (f) => !dateGroupFieldNames.has(f.name) && !quickChipFieldNameSet.has(f.name)
-  );
+  const otherFieldDefs = filterFields.filter((f) => !quickChipFieldNameSet.has(f.name));
   const otherFieldNameSet = new Set(otherFieldDefs.map((f) => f.name));
 
   function applyQuickFilter(fieldName, filterObj) {
@@ -158,18 +130,6 @@ function DynamicFilterBarInner({
 
   function clearQuickFilter(fieldName) {
     const newFilters = filters.filter((f) => f.field !== fieldName);
-    setFilters(newFilters);
-    onApply?.(buildQueryParams(newFilters, filterFields));
-  }
-
-  function applyDateRangeFilters(fieldNames, newEntries) {
-    const newFilters = [...filters.filter((f) => !fieldNames.includes(f.field)), ...newEntries];
-    setFilters(newFilters);
-    onApply?.(buildQueryParams(newFilters, filterFields));
-  }
-
-  function clearDateRangeFilters(fieldNames) {
-    const newFilters = filters.filter((f) => !fieldNames.includes(f.field));
     setFilters(newFilters);
     onApply?.(buildQueryParams(newFilters, filterFields));
   }
@@ -205,19 +165,6 @@ function DynamicFilterBarInner({
         p: 0,
       }}
     >
-      {dateRangeGroups.map((group) => (
-        <DateRangeGroupChip
-          key={group.key}
-          group={group}
-          filters={filters}
-          timezone={resolvedTimezone}
-          onApply={applyDateRangeFilters}
-          onClear={() =>
-            clearDateRangeFilters(Array.from(new Set([group.startField.name, group.endField.name])))
-          }
-        />
-      ))}
-
       {regularMostUsedFieldDefs.map((fieldDef) => {
         const appliedFilter = filters.find((f) => f.field === fieldDef.name) ?? null;
         const hasMultipleOperators = (fieldDef.operators ?? []).length > 1;
@@ -237,6 +184,8 @@ function DynamicFilterBarInner({
                   appliedFilter={appliedFilter}
                   preferredOperatorId={mostUsedPreferredOperatorId.get(fieldDef.name)}
                   fetcher={fetcher}
+                  timezone={resolvedTimezone}
+                  dateFormat={dateFormat}
                   onApply={(filterObj) => applyQuickFilter(fieldDef.name, filterObj)}
                 />
               ) : (
@@ -245,6 +194,8 @@ function DynamicFilterBarInner({
                   fieldDef={fieldDef}
                   appliedFilter={appliedFilter}
                   fetcher={fetcher}
+                  timezone={resolvedTimezone}
+                  dateFormat={dateFormat}
                   onApply={(filterObj) => applyQuickFilter(fieldDef.name, filterObj)}
                 />
               )
@@ -274,6 +225,8 @@ function DynamicFilterBarInner({
                   appliedFilter={appliedFilter}
                   preferredOperatorId={mostUsedPreferredOperatorId.get(fieldDef.name)}
                   fetcher={fetcher}
+                  timezone={resolvedTimezone}
+                  dateFormat={dateFormat}
                   onApply={(filterObj) => applyQuickFilter(fieldDef.name, filterObj)}
                 />
               ) : (
@@ -306,6 +259,8 @@ function DynamicFilterBarInner({
               otherFieldDefs={otherFieldDefs}
               appliedOtherFilters={filters.filter((f) => otherFieldNameSet.has(f.field))}
               fetcher={fetcher}
+              timezone={resolvedTimezone}
+              dateFormat={dateFormat}
               onApply={(newOtherFilters) => {
                 applyOtherFilters(newOtherFilters);
                 closePopover();

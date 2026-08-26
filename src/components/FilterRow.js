@@ -25,6 +25,8 @@ function FilterRow({
   onChange,
   onCommit,
   fetcher,
+  timezone,
+  dateFormat,
   showRemove = true,
   showField = true,
 }) {
@@ -144,6 +146,8 @@ function FilterRow({
             onChange={(val) => onChange('value', val)}
             onCommit={onCommit}
             fetcher={fetcher}
+            timezone={timezone}
+            dateFormat={dateFormat}
           />
         </Box>
       )}

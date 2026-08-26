@@ -7,7 +7,15 @@ import FilterRow from './FilterRow';
 import { useFilterBarLabels } from '../tokens';
 import { getDefaultOperatorId, makeFilter } from '../utils';
 
-function OtherFiltersBuilder({ otherFieldDefs, appliedOtherFilters, onApply, onCancel, fetcher }) {
+function OtherFiltersBuilder({
+  otherFieldDefs,
+  appliedOtherFilters,
+  onApply,
+  onCancel,
+  fetcher,
+  timezone,
+  dateFormat,
+}) {
   const labels = useFilterBarLabels();
   const [draftFilters, setDraftFilters] = useState(() =>
     appliedOtherFilters.length > 0
@@ -65,6 +73,8 @@ function OtherFiltersBuilder({ otherFieldDefs, appliedOtherFilters, onApply, onC
             onRemove={() => removeFilter(index)}
             onChange={(key, val, extra) => updateFilter(index, key, val, extra)}
             fetcher={fetcher}
+            timezone={timezone}
+            dateFormat={dateFormat}
           />
         ))}
       </Box>

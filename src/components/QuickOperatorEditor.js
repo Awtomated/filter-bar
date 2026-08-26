@@ -9,7 +9,15 @@ import { getDefaultOperatorId, getOperatorId, isEmptyFilterValue } from '../util
 // picking an operator that needs no value (e.g. "Is empty") commits right
 // away, and a value commits on blur (text) or the moment it's picked
 // (date/select) — see ValueInput's onCommit.
-function QuickOperatorEditor({ fieldDef, appliedFilter, preferredOperatorId, onApply, fetcher }) {
+function QuickOperatorEditor({
+  fieldDef,
+  appliedFilter,
+  preferredOperatorId,
+  onApply,
+  fetcher,
+  timezone,
+  dateFormat,
+}) {
   const operators = fieldDef.operators ?? [];
   const [filter, setFilter] = useState(() => ({
     id: appliedFilter?.id ?? crypto.randomUUID(),
@@ -47,6 +55,8 @@ function QuickOperatorEditor({ fieldDef, appliedFilter, preferredOperatorId, onA
       onChange={handleChange}
       onCommit={handleCommitValue}
       fetcher={fetcher}
+      timezone={timezone}
+      dateFormat={dateFormat}
       showRemove={false}
       showField={false}
     />
