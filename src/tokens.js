@@ -30,10 +30,6 @@ export const defaultLabels = {
   valueLabel: 'Value',
   noMatches: 'No matches found',
   searchPlaceholder: (fieldLabel) => `Search ${fieldLabel.toLowerCase()}...`,
-  isBefore: 'Is Before',
-  isBetween: 'Is Between',
-  isAfter: 'Is After',
-  conditionLabel: 'Condition',
   clearFilterTooltip: 'Clear filter',
   apply: 'Apply',
   cancel: 'Cancel',
@@ -42,7 +38,6 @@ export const defaultLabels = {
   filtersTitle: 'Filters',
   fieldLabel: 'Field',
   operatorLabel: 'Operator',
-  dateRangeLabel: 'Date Range',
 };
 
 const TokensContext = createContext(defaultTokens);

@@ -1,26 +1,18 @@
 import {
   adaptApiConfig,
   applyChoicesMap,
-  buildDateRangeGroups,
   buildQueryParams,
-  classifyDateField,
-  findBoundOperatorId,
-  formatDateRangeLabel,
   getChoiceId,
   getChoiceLabel,
   getDefaultOperator,
   getDefaultOperatorId,
   getOperatorId,
-  isDateLikeField,
   isEmptyFilterValue,
   isMultiSelectionField,
   isSelectionField,
   makeFilter,
   matchMostUsedField,
-  toCalendarDay,
-  toIsoDay,
 } from '../src/utils';
-import dayjs from 'dayjs';
 
 function op(overrides) {
   return {
@@ -58,68 +50,6 @@ describe('getOperatorId', () => {
 
   it('keys every other operator by query_param alone', () => {
     expect(getOperatorId(op({ query_param: 'name__icontains' }))).toBe('name__icontains');
-  });
-});
-
-describe('classifyDateField', () => {
-  it('classifies concatenated suffix field names correctly', () => {
-    expect(classifyDateField(field({ name: 'startdate__gte' }))).toBe('start');
-    expect(classifyDateField(field({ name: 'enddate__lte' }))).toBe('end');
-  });
-
-  it('does not false-positive on a field whose letters-only form accidentally spells a keyword', () => {
-    // "vendor_date" normalized without token boundaries would contain "end"
-    // (v-e-n-d...) — this must NOT classify as an end-date field.
-    expect(classifyDateField(field({ name: 'vendor_date' }))).toBe('solo');
-    expect(classifyDateField(field({ name: 'residue_date' }))).toBe('solo');
-  });
-
-  it('classifies whole-word start/end/due/estimate tokens', () => {
-    expect(classifyDateField(field({ name: 'due_date' }))).toBe('end');
-    expect(classifyDateField(field({ name: 'estimate_date' }))).toBe('start');
-  });
-});
-
-describe('buildDateRangeGroups', () => {
-  it('pairs a most-used start field with its end counterpart from the full field list', () => {
-    const start = field({
-      name: 'startdate__gte',
-      operators: [op({ query_param: 'startdate__gte', value: 'gte' })],
-    });
-    const end = field({
-      name: 'enddate__lte',
-      operators: [op({ query_param: 'enddate__lte', value: 'lte' })],
-    });
-    const groups = buildDateRangeGroups([start], [start, end]);
-    expect(groups).toHaveLength(1);
-    expect(groups[0].startField.name).toBe('startdate__gte');
-    expect(groups[0].endField.name).toBe('enddate__lte');
-  });
-
-  it('does not collapse a solo date field with only one operator into a fake two-bound range', () => {
-    const solo = field({
-      name: 'due_date',
-      default_operator: 'lte',
-      operators: [op({ query_param: 'due_date__lte', value: 'lte', input_field: 'date' })],
-    });
-    const groups = buildDateRangeGroups([solo], [solo]);
-    // A single-operator solo field can't represent two independent bounds —
-    // it must be left out of dateRangeGroups entirely instead of producing
-    // a group whose start/end operatorId collapse to the same value.
-    expect(groups).toHaveLength(0);
-  });
-
-  it('builds a genuine two-bound range for a solo field that exposes two distinct date operators', () => {
-    const solo = field({
-      name: 'created_at',
-      operators: [
-        op({ query_param: 'created_at__gte', value: 'gte', input_field: 'date' }),
-        op({ query_param: 'created_at__lte', value: 'lte', input_field: 'date' }),
-      ],
-    });
-    const groups = buildDateRangeGroups([solo], [solo]);
-    expect(groups).toHaveLength(1);
-    expect(groups[0].startOperatorId).not.toBe(groups[0].endOperatorId);
   });
 });
 
@@ -324,87 +254,6 @@ describe('getDefaultOperator / getDefaultOperatorId', () => {
     const fieldDef = field({ operators: [] });
     expect(getDefaultOperator(fieldDef)).toBeUndefined();
     expect(getDefaultOperatorId(fieldDef)).toBe('');
-  });
-});
-
-describe('isDateLikeField', () => {
-  it('is true for a name containing a "date" token', () => {
-    expect(isDateLikeField(field({ name: 'start_date' }))).toBe(true);
-  });
-
-  it('is false for a name without a "date" token', () => {
-    expect(isDateLikeField(field({ name: 'name' }))).toBe(false);
-  });
-});
-
-describe('findBoundOperatorId', () => {
-  it('matches a start-bound operator by label/value/query_param pattern', () => {
-    const startOp = op({ label: 'Is After', value: 'gte', query_param: 'created__gte' });
-    const fieldDef = field({ operators: [startOp] });
-    expect(findBoundOperatorId(fieldDef, 'start')).toBe(getOperatorId(startOp));
-  });
-
-  it('matches an end-bound operator by label/value/query_param pattern', () => {
-    const endOp = op({ label: 'Is Before', value: 'lte', query_param: 'created__lte' });
-    const fieldDef = field({ operators: [endOp] });
-    expect(findBoundOperatorId(fieldDef, 'end')).toBe(getOperatorId(endOp));
-  });
-
-  it('falls back to the first/second date operator when no pattern matches', () => {
-    const first = op({ label: 'Exact', value: 'exact', query_param: 'a', input_field: 'date' });
-    const second = op({ label: 'Other', value: 'other', query_param: 'b', input_field: 'date' });
-    const fieldDef = field({ operators: [first, second] });
-    expect(findBoundOperatorId(fieldDef, 'start')).toBe(getOperatorId(first));
-    expect(findBoundOperatorId(fieldDef, 'end')).toBe(getOperatorId(second));
-  });
-
-  it('falls back to the default operator id when there is no pattern match and fewer than two date operators', () => {
-    const only = op({ label: 'Exact', value: 'exact', query_param: 'a' });
-    const fieldDef = field({ operators: [only] });
-    expect(findBoundOperatorId(fieldDef, 'start')).toBe(getOperatorId(only));
-  });
-});
-
-describe('toIsoDay', () => {
-  it('returns null for a falsy, non-dayjs, or invalid value', () => {
-    expect(toIsoDay(null)).toBeNull();
-    expect(toIsoDay(undefined)).toBeNull();
-    expect(toIsoDay('2024-01-01')).toBeNull();
-    expect(toIsoDay(dayjs('invalid'))).toBeNull();
-  });
-
-  it('converts a valid dayjs value to a UTC-midnight ISO string for that calendar day', () => {
-    const value = dayjs('2024-03-15T18:30:00');
-    expect(toIsoDay(value)).toBe('2024-03-15T00:00:00.000Z');
-  });
-});
-
-describe('toCalendarDay', () => {
-  it('returns null for a falsy iso value or an invalid date', () => {
-    expect(toCalendarDay(null, 'UTC')).toBeNull();
-    expect(toCalendarDay('not-a-date', 'UTC')).toBeNull();
-  });
-
-  it('returns a dayjs object anchored to the calendar day in the given timezone', () => {
-    const result = toCalendarDay('2024-03-15T00:00:00.000Z', 'UTC');
-    expect(result.format('YYYY-MM-DD')).toBe('2024-03-15');
-  });
-});
-
-describe('formatDateRangeLabel', () => {
-  it('returns null when both dates are missing', () => {
-    expect(formatDateRangeLabel(null, null)).toBeNull();
-  });
-
-  it('formats a start and end date as DD/MM/YY separated by a dash', () => {
-    expect(formatDateRangeLabel('2024-03-15T00:00:00.000Z', '2024-04-01T00:00:00.000Z')).toBe(
-      '15/03/24 - 01/04/24'
-    );
-  });
-
-  it('formats a one-sided range leaving the missing side blank', () => {
-    expect(formatDateRangeLabel('2024-03-15T00:00:00.000Z', null)).toBe('15/03/24 - ');
-    expect(formatDateRangeLabel(null, '2024-04-01T00:00:00.000Z')).toBe(' - 01/04/24');
   });
 });
 

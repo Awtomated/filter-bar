@@ -10,7 +10,7 @@ import { getDefaultOperator, getDefaultOperatorId, isEmptyFilterValue } from '..
 // so there's never a choice to present here, just the value. There's no
 // Apply button: a plain text/number value commits on blur, a date/select
 // value commits the moment it's picked (see ValueInput's onCommit).
-function QuickFieldEditor({ fieldDef, appliedFilter, onApply, fetcher }) {
+function QuickFieldEditor({ fieldDef, appliedFilter, onApply, fetcher, timezone, dateFormat }) {
   const operatorId = appliedFilter?.operatorId ?? getDefaultOperatorId(fieldDef);
   const selectedOp = getDefaultOperator(fieldDef);
   const [value, setValue] = useState(appliedFilter?.value ?? null);
@@ -50,6 +50,8 @@ function QuickFieldEditor({ fieldDef, appliedFilter, onApply, fetcher }) {
         onChange={setValue}
         onCommit={commitValue}
         fetcher={fetcher}
+        timezone={timezone}
+        dateFormat={dateFormat}
       />
     </Box>
   );
