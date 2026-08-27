@@ -1,8 +1,8 @@
 # @awtomated/filter-bar
 
 A schema-driven, fully customizable React filter bar for MUI applications — `DynamicFilterBar`
-renders quick-access filter chips, a date-range chip, and an overflow "Filter" builder from a
-backend-described filter schema, plus a standalone `FilterToggleButton` for toggling it open/closed.
+renders quick-access filter chips and an overflow "Filter" builder from a backend-described filter
+schema, plus a standalone `FilterToggleButton` for toggling it open/closed.
 
 It has no knowledge of any specific backend, HTTP client, or app theme — every side effect
 (fetching, timezone, styling, copy) is injected via props.
@@ -14,7 +14,7 @@ npm install @awtomated/filter-bar
 ```
 
 Peer dependencies (bring your own versions): `react`, `react-dom`, `@mui/material`,
-`@mui/icons-material`, `@mui/x-date-pickers`, `@mui/x-date-pickers-pro`.
+`@mui/icons-material`, `@mui/x-date-pickers`.
 
 ## Usage
 
@@ -89,10 +89,12 @@ shape:
   **and** `input_type: "multiple"`; every other shape renders single-select. For a selection field
   with only one operator, this is decided by that one (default) operator — see
   `isMultiSelectionField`.
-- Fields whose name looks like a date (contains "date") and are listed in `most_used_filters` are
-  auto-paired into a single date-range chip when a `start`/`estimate` field has an `end`/`due`
-  counterpart (by name prefix, not a backend flag) — see `classifyDateField` if you need to match
-  this naming convention exactly.
+- A field renders a **date picker** when the selected operator's `input_field` is `"date"`, or when
+  the field's own `type` is `"datetime"` — whichever applies, regardless of the other. Like any
+  other field, a date field listed in `most_used_filters` gets its own quick chip and opens the same
+  date picker in its popover on click. Values are serialized as a UTC-midnight ISO string for the
+  field's calendar day, anchored to the `timezone` prop, and the picker's displayed/typed section
+  order comes from the `dateFormat` prop (e.g. `"DD-MM-YYYY"` puts Day first).
 
 ## Props
 
@@ -104,7 +106,8 @@ shape:
 | `choicesMap`      | `{ [field]: { options } \| { fetchUrl } }` | no       | Force specific fields to use these choices instead of the schema's own `options`/`fetch_url`. |
 | `appliedFilters`  | array                                      | no       | Initial filter state (controlled from outside).                                               |
 | `onFiltersChange` | `(filters) => void`                        | no       | Fires on every filter state change, before `onApply`'s param flattening.                      |
-| `timezone`        | string (IANA)                              | no       | Defaults to the browser's detected timezone. Used for date-range math.                        |
+| `timezone`        | string (IANA)                              | no       | Defaults to the browser's detected timezone. Used to serialize/parse date field values.       |
+| `dateFormat`      | string (dayjs format)                      | no       | Defaults to `"MM/DD/YYYY"`. Controls the date picker's displayed/typed section order.         |
 | `tokens`          | object                                     | no       | Spacing/radius overrides — see Theming below.                                                 |
 | `labels`          | object                                     | no       | UI copy overrides (i18n) — see Theming below.                                                 |
 | `maxQuickChips`   | number                                     | no       | Defaults to 5. Caps individually-rendered chips before folding into "Filter".                 |
@@ -127,9 +130,8 @@ points:
   `defaultTokens` in `src/tokens.js`). Every other color in the package (text, background.paper,
   primary.main, etc.) already reads from your theme directly via standard MUI palette slots, so it
   re-themes automatically without any token overrides.
-- **`labels`** — every hardcoded UI string (chip labels, "Is Before" / "Is Between" / "Is After",
-  search placeholders, button text) so you can localize or rebrand without forking (see
-  `defaultLabels` in `src/tokens.js`).
+- **`labels`** — every hardcoded UI string (chip labels, search placeholders, button text) so you
+  can localize or rebrand without forking (see `defaultLabels` in `src/tokens.js`).
 
 For one-off styling beyond tokens, every MUI sub-component underneath is a plain `@mui/material`
 component — target it via your theme's `components.MuiChip.styleOverrides` etc. the same way you
@@ -138,9 +140,8 @@ would anywhere else in your app.
 ## Advanced: building custom UI on the same logic
 
 `buildQueryParams`, `adaptApiConfig`, `applyChoicesMap`, `getDefaultOperatorId`, `isSelectionField`,
-`isMultiSelectionField`, `buildDateRangeGroups`, and `classifyDateField` are all exported as pure
-functions if you want to build a different UI on top of the same filter-config contract, or reuse
-`QuickFilterChip` as a building block.
+and `isMultiSelectionField` are all exported as pure functions if you want to build a different UI
+on top of the same filter-config contract, or reuse `QuickFilterChip` as a building block.
 
 ## Development
 
