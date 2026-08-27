@@ -5,6 +5,7 @@ import { Box, CircularProgress } from '@mui/material';
 import QuickFilterChip from './QuickFilterChip';
 import QuickFieldEditor from './QuickFieldEditor';
 import QuickOperatorEditor from './QuickOperatorEditor';
+import QuickDateOperatorEditor from './QuickDateOperatorEditor';
 import SelectionChoicesEditor from './SelectionChoicesEditor';
 import OtherFiltersBuilder from './OtherFiltersBuilder';
 import { DynamicFilterProvider, useFilterBarLabels, useFilterBarTokens } from '../tokens';
@@ -18,6 +19,14 @@ import {
 } from '../utils';
 
 const DEFAULT_MAX_QUICK_CHIPS = 5;
+
+function isDateField(fieldDef) {
+  return (
+    fieldDef.type === 'date' ||
+    fieldDef.type === 'datetime' ||
+    (fieldDef.operators ?? []).some((op) => op.input_field === 'date')
+  );
+}
 
 function DynamicFilterBarInner({
   filterApiUrl,
@@ -168,27 +177,46 @@ function DynamicFilterBarInner({
       {regularMostUsedFieldDefs.map((fieldDef) => {
         const appliedFilter = filters.find((f) => f.field === fieldDef.name) ?? null;
         const hasMultipleOperators = (fieldDef.operators ?? []).length > 1;
+        const isDate = isDateField(fieldDef);
+        let chipWidth = 260;
+        if (hasMultipleOperators) chipWidth = 'max-content';
         return (
           <QuickFilterChip
             key={fieldDef.name}
             label={fieldDef.label}
             count={appliedFilter ? 1 : 0}
             onClear={() => clearQuickFilter(fieldDef.name)}
-            width={hasMultipleOperators ? 'max-content' : 260}
+            width={chipWidth}
           >
-            {({ openKey }) =>
-              hasMultipleOperators ? (
-                <QuickOperatorEditor
-                  key={openKey}
-                  fieldDef={fieldDef}
-                  appliedFilter={appliedFilter}
-                  preferredOperatorId={mostUsedPreferredOperatorId.get(fieldDef.name)}
-                  fetcher={fetcher}
-                  timezone={resolvedTimezone}
-                  dateFormat={dateFormat}
-                  onApply={(filterObj) => applyQuickFilter(fieldDef.name, filterObj)}
-                />
-              ) : (
+            {({ openKey }) => {
+              if (hasMultipleOperators && isDate) {
+                return (
+                  <QuickDateOperatorEditor
+                    key={openKey}
+                    fieldDef={fieldDef}
+                    appliedFilter={appliedFilter}
+                    preferredOperatorId={mostUsedPreferredOperatorId.get(fieldDef.name)}
+                    timezone={resolvedTimezone}
+                    dateFormat={dateFormat}
+                    onApply={(filterObj) => applyQuickFilter(fieldDef.name, filterObj)}
+                  />
+                );
+              }
+              if (hasMultipleOperators) {
+                return (
+                  <QuickOperatorEditor
+                    key={openKey}
+                    fieldDef={fieldDef}
+                    appliedFilter={appliedFilter}
+                    preferredOperatorId={mostUsedPreferredOperatorId.get(fieldDef.name)}
+                    fetcher={fetcher}
+                    timezone={resolvedTimezone}
+                    dateFormat={dateFormat}
+                    onApply={(filterObj) => applyQuickFilter(fieldDef.name, filterObj)}
+                  />
+                );
+              }
+              return (
                 <QuickFieldEditor
                   key={openKey}
                   fieldDef={fieldDef}
@@ -198,8 +226,8 @@ function DynamicFilterBarInner({
                   dateFormat={dateFormat}
                   onApply={(filterObj) => applyQuickFilter(fieldDef.name, filterObj)}
                 />
-              )
-            }
+              );
+            }}
           </QuickFilterChip>
         );
       })}

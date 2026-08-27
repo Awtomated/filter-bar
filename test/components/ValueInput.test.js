@@ -86,81 +86,37 @@ describe('ValueInput', () => {
     expect(screen.getByRole('listbox')).toBeInTheDocument();
   });
 
-  it('renders a date picker when the selected operator input_field is "date"', () => {
+  it('renders a calendar when the selected operator input_field is "date"', () => {
     render(
       <ValueInput
         fieldDef={{}}
         selectedOp={{ input_field: 'date' }}
-        value={null}
+        value='2024-03-01T00:00:00.000Z'
         onChange={() => {}}
         fetcher={jest.fn()}
+        timezone='UTC'
       />
     );
-    // The date picker renders a sectioned input (month/day/year spinbuttons)
-    // rather than a single labeled text input.
-    expect(screen.getByRole('group', { name: 'Value' })).toBeInTheDocument();
-    expect(screen.getByRole('spinbutton', { name: 'Month' })).toBeInTheDocument();
+    // A calendar day grid, not a text field — no "Value" labeled input.
+    expect(screen.queryByLabelText('Value')).not.toBeInTheDocument();
+    expect(screen.getByRole('gridcell', { name: '15' })).toBeInTheDocument();
   });
 
-  it('keeps the label shrunk to the border even without focus, so it does not sit on top of and hide the MM/DD/YYYY placeholder', () => {
-    render(
-      <ValueInput
-        fieldDef={{}}
-        selectedOp={{ input_field: 'date' }}
-        value={null}
-        onChange={() => {}}
-        fetcher={jest.fn()}
-      />
-    );
-    const [label] = screen.getAllByText('Value');
-    expect(label).toHaveAttribute('data-shrink', 'true');
-  });
-
-  it('renders a date picker when the field type is "datetime", even if the selected operator input_field is not "date"', () => {
+  it('renders a calendar when the field type is "datetime", even if the selected operator input_field is not "date"', () => {
     render(
       <ValueInput
         fieldDef={{ type: 'datetime' }}
         selectedOp={{ input_field: 'text' }}
-        value={null}
+        value='2024-03-01T00:00:00.000Z'
         onChange={() => {}}
         fetcher={jest.fn()}
+        timezone='UTC'
       />
     );
-    expect(screen.getByRole('group', { name: 'Value' })).toBeInTheDocument();
-    expect(screen.getByRole('spinbutton', { name: 'Month' })).toBeInTheDocument();
+    expect(screen.getByRole('gridcell', { name: '15' })).toBeInTheDocument();
   });
 
-  it('defaults the date picker sections to MM/DD/YYYY when no dateFormat is given', () => {
-    render(
-      <ValueInput
-        fieldDef={{}}
-        selectedOp={{ input_field: 'date' }}
-        value={null}
-        onChange={() => {}}
-        fetcher={jest.fn()}
-      />
-    );
-    expect(screen.getByRole('spinbutton', { name: 'Month' })).toHaveTextContent('MM');
-    expect(screen.getByRole('spinbutton', { name: 'Day' })).toHaveTextContent('DD');
-    expect(screen.getByRole('spinbutton', { name: 'Year' })).toHaveTextContent('YYYY');
-  });
-
-  it('renders the date picker sections in the given dateFormat order', () => {
-    render(
-      <ValueInput
-        fieldDef={{}}
-        selectedOp={{ input_field: 'date' }}
-        value={null}
-        onChange={() => {}}
-        fetcher={jest.fn()}
-        dateFormat='DD-MM-YYYY'
-      />
-    );
-    const sections = screen.getAllByRole('spinbutton');
-    expect(sections.map((el) => el.getAttribute('aria-label'))).toEqual(['Day', 'Month', 'Year']);
-  });
-
-  it('renders the given ISO value as a calendar day anchored to the given timezone', () => {
+  it('shows the given ISO value selected on the calendar, anchored to the given timezone', () => {
     render(
       <ValueInput
         fieldDef={{}}
@@ -171,46 +127,73 @@ describe('ValueInput', () => {
         timezone='UTC'
       />
     );
-    expect(screen.getByRole('spinbutton', { name: 'Month' })).toHaveTextContent('03');
-    expect(screen.getByRole('spinbutton', { name: 'Day' })).toHaveTextContent('15');
-    expect(screen.getByRole('spinbutton', { name: 'Year' })).toHaveTextContent('2024');
+    expect(screen.getByRole('gridcell', { name: '15', selected: true })).toBeInTheDocument();
   });
 
-  it('calls onChange and onCommit with a UTC-midnight ISO string when the user picks a full date', async () => {
+  it('calls onChange and onCommit with a UTC-midnight ISO string when the user picks a day', async () => {
     const onChange = jest.fn();
     const onCommit = jest.fn();
     render(
       <ValueInput
         fieldDef={{}}
         selectedOp={{ input_field: 'date' }}
-        value={null}
+        value='2024-03-01T00:00:00.000Z'
         onChange={onChange}
         onCommit={onCommit}
         fetcher={jest.fn()}
         timezone='UTC'
       />
     );
-    await userEvent.click(screen.getByRole('spinbutton', { name: 'Month' }));
-    await userEvent.keyboard('03152024');
+    await userEvent.click(screen.getByRole('gridcell', { name: '15' }));
     expect(onChange).toHaveBeenLastCalledWith('2024-03-15T00:00:00.000Z');
     expect(onCommit).toHaveBeenLastCalledWith('2024-03-15T00:00:00.000Z');
   });
 
-  it('still commits the correct date when typed digit-by-digit against a real controlled value that re-renders on every callback', async () => {
+  it('still commits the correct date against a real controlled value that re-renders on every callback', async () => {
     const onCommit = jest.fn();
     render(
       <StatefulValueInput
         fieldDef={{}}
         selectedOp={{ input_field: 'date' }}
-        value={null}
+        value='2024-03-01T00:00:00.000Z'
         onCommit={onCommit}
         fetcher={jest.fn()}
         timezone='UTC'
       />
     );
-    await userEvent.click(screen.getByRole('spinbutton', { name: 'Month' }));
-    await userEvent.keyboard('03152024');
+    await userEvent.click(screen.getByRole('gridcell', { name: '15' }));
     expect(onCommit).toHaveBeenLastCalledWith('2024-03-15T00:00:00.000Z');
+  });
+
+  it("shows the operator's gte/lte shortcuts above the calendar", () => {
+    render(
+      <ValueInput
+        fieldDef={{}}
+        selectedOp={{ input_field: 'date', input_type: 'single', value: 'gte' }}
+        value={null}
+        onChange={() => {}}
+        fetcher={jest.fn()}
+        timezone='UTC'
+      />
+    );
+    expect(screen.getByRole('button', { name: 'Today' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Tomorrow' })).toBeInTheDocument();
+  });
+
+  it('renders the range calendar with a start/end value when the selected operator is range-shaped', () => {
+    render(
+      <ValueInput
+        fieldDef={{}}
+        selectedOp={{ input_field: 'date', input_type: 'range', value: 'between' }}
+        value={{ start: '2024-03-05T00:00:00.000Z', end: '2024-03-10T00:00:00.000Z' }}
+        onChange={() => {}}
+        fetcher={jest.fn()}
+        timezone='UTC'
+      />
+    );
+    expect(screen.getByRole('button', { name: 'This Week' })).toBeInTheDocument();
+    expect(screen.getByRole('gridcell', { name: '5', selected: true })).toBeInTheDocument();
+    expect(screen.getByRole('gridcell', { name: '10', selected: true })).toBeInTheDocument();
   });
 
   it('renders a number text field when the selected operator input_field is "number"', () => {
