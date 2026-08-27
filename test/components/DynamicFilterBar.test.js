@@ -147,7 +147,7 @@ describe('DynamicFilterBar', () => {
     expect(onApply).toHaveBeenLastCalledWith({});
   });
 
-  it('renders a most-used date field as its own quick chip, opening the date field in its popover like any other field', async () => {
+  it("renders a most-used date field as its own quick chip, opening a calendar with its operator's shortcuts", async () => {
     const fetcher = jest.fn().mockResolvedValue({
       data: makeConfig({
         filters: {
@@ -171,10 +171,12 @@ describe('DynamicFilterBar', () => {
     render(<DynamicFilterBar filterApiUrl='/api/config' fetcher={fetcher} />);
     const chip = await screen.findByText('Start Date');
     await userEvent.click(chip);
-    expect(screen.getByRole('group', { name: 'Value' })).toBeInTheDocument();
+    // The single operator's value ("gte") drives the shortcut set.
+    expect(screen.getByRole('button', { name: 'Today' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Tomorrow' })).toBeInTheDocument();
   });
 
-  it('renders the date field picker in the given dateFormat and still applies the correct ISO value', async () => {
+  it('applies the correct UTC-midnight ISO value when a calendar shortcut is picked', async () => {
     const fetcher = jest.fn().mockResolvedValue({
       data: makeConfig({
         filters: {
@@ -202,19 +204,15 @@ describe('DynamicFilterBar', () => {
         fetcher={fetcher}
         onApply={onApply}
         timezone='UTC'
-        dateFormat='DD-MM-YYYY'
       />
     );
     const chip = await screen.findByText('Start Date');
     await userEvent.click(chip);
+    await userEvent.click(screen.getByRole('button', { name: 'Today' }));
 
-    // dateFormat='DD-MM-YYYY' puts the Day section first, with "-" separators.
-    const daySection = screen.getByRole('spinbutton', { name: 'Day' });
-    expect(daySection).toBeInTheDocument();
-    await userEvent.click(daySection);
-    await userEvent.keyboard('15032024');
-
-    expect(onApply).toHaveBeenLastCalledWith({ startdate__gte: '2024-03-15T00:00:00.000Z' });
+    expect(onApply).toHaveBeenLastCalledWith({
+      startdate__gte: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T00:00:00\.000Z$/),
+    });
   });
 
   it('applies and clears filters via the trailing "Filter" builder chip', async () => {
