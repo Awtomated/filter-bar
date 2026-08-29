@@ -110,6 +110,8 @@ export function getChoiceId(choice) {
 
 export function getChoiceLabel(choice) {
   if (!choice) return '';
+  if (choice?.language_code && choice?.language)
+    return `${choice?.language_code} - ${choice?.language}`;
   return choice.label || choice.title || choice.name || choice.subtitle || String(choice.id ?? '');
 }
 
