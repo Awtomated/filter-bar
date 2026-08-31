@@ -24,6 +24,7 @@ function FilterRow({
   onRemove,
   onChange,
   onCommit,
+  closePopover,
   fetcher,
   timezone,
   dateFormat,
@@ -145,6 +146,7 @@ function FilterRow({
             value={filter.value}
             onChange={(val) => onChange('value', val)}
             onCommit={onCommit}
+            closePopover={closePopover}
             fetcher={fetcher}
             timezone={timezone}
             dateFormat={dateFormat}

@@ -188,7 +188,7 @@ function DynamicFilterBarInner({
             onClear={() => clearQuickFilter(fieldDef.name)}
             width={chipWidth}
           >
-            {({ openKey }) => {
+            {({ openKey, closePopover }) => {
               if (hasMultipleOperators && isDate) {
                 return (
                   <QuickDateOperatorEditor
@@ -209,6 +209,7 @@ function DynamicFilterBarInner({
                     fieldDef={fieldDef}
                     appliedFilter={appliedFilter}
                     preferredOperatorId={mostUsedPreferredOperatorId.get(fieldDef.name)}
+                    closePopover={closePopover}
                     fetcher={fetcher}
                     timezone={resolvedTimezone}
                     dateFormat={dateFormat}
@@ -221,6 +222,7 @@ function DynamicFilterBarInner({
                   key={openKey}
                   fieldDef={fieldDef}
                   appliedFilter={appliedFilter}
+                  closePopover={closePopover}
                   fetcher={fetcher}
                   timezone={resolvedTimezone}
                   dateFormat={dateFormat}
@@ -252,6 +254,7 @@ function DynamicFilterBarInner({
                   fieldDef={fieldDef}
                   appliedFilter={appliedFilter}
                   preferredOperatorId={mostUsedPreferredOperatorId.get(fieldDef.name)}
+                  closePopover={closePopover}
                   fetcher={fetcher}
                   timezone={resolvedTimezone}
                   dateFormat={dateFormat}

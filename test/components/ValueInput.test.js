@@ -232,7 +232,7 @@ describe('ValueInput', () => {
     ['empty string', ''],
     ['null', null],
     ['undefined', undefined],
-  ])('does not call onCommit on blur when the value is %s', async (_label, value) => {
+  ])('does not call onCommit on Enter when the value is %s', async (_label, value) => {
     const onCommit = jest.fn();
     render(
       <ValueInput
@@ -246,11 +246,11 @@ describe('ValueInput', () => {
     );
     const input = screen.getByLabelText('Value');
     await userEvent.click(input);
-    await userEvent.tab();
+    await userEvent.keyboard('{Enter}');
     expect(onCommit).not.toHaveBeenCalled();
   });
 
-  it('calls onCommit on blur when the value is non-empty', async () => {
+  it('does not call onCommit on blur', async () => {
     const onCommit = jest.fn();
     render(
       <ValueInput
@@ -265,6 +265,62 @@ describe('ValueInput', () => {
     const input = screen.getByLabelText('Value');
     await userEvent.click(input);
     await userEvent.tab();
+    expect(onCommit).not.toHaveBeenCalled();
+  });
+
+  it('calls onCommit on Enter when the value is non-empty', async () => {
+    const onCommit = jest.fn();
+    render(
+      <ValueInput
+        fieldDef={{}}
+        selectedOp={{ input_field: 'text' }}
+        value='hello'
+        onChange={() => {}}
+        onCommit={onCommit}
+        fetcher={jest.fn()}
+      />
+    );
+    const input = screen.getByLabelText('Value');
+    await userEvent.click(input);
+    await userEvent.keyboard('{Enter}');
     expect(onCommit).toHaveBeenCalledWith('hello');
+  });
+
+  it('calls closePopover after committing on Enter', async () => {
+    const onCommit = jest.fn();
+    const closePopover = jest.fn();
+    render(
+      <ValueInput
+        fieldDef={{}}
+        selectedOp={{ input_field: 'text' }}
+        value='hello'
+        onChange={() => {}}
+        onCommit={onCommit}
+        closePopover={closePopover}
+        fetcher={jest.fn()}
+      />
+    );
+    const input = screen.getByLabelText('Value');
+    await userEvent.click(input);
+    await userEvent.keyboard('{Enter}');
+    expect(closePopover).toHaveBeenCalled();
+  });
+
+  it('does not call closePopover on Enter when the value is empty', async () => {
+    const closePopover = jest.fn();
+    render(
+      <ValueInput
+        fieldDef={{}}
+        selectedOp={{ input_field: 'text' }}
+        value=''
+        onChange={() => {}}
+        closePopover={closePopover}
+        fetcher={jest.fn()}
+      />
+    );
+    const input = screen.getByLabelText('Value');
+    await userEvent.click(input);
+    await userEvent.keyboard('{Enter}');
+    expect(closePopover).not.toHaveBeenCalled();
   });
 });

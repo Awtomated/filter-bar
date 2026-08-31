@@ -52,7 +52,7 @@ describe('QuickFieldEditor', () => {
     expect(screen.queryByLabelText('Value')).not.toBeInTheDocument();
   });
 
-  it('has no Apply button — a typed value commits on blur', async () => {
+  it('has no Apply button — a typed value commits on Enter', async () => {
     const onApply = jest.fn();
     const fieldDef = field({});
     render(
@@ -66,10 +66,27 @@ describe('QuickFieldEditor', () => {
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
     await userEvent.type(screen.getByLabelText('Value'), 'acme');
     expect(onApply).not.toHaveBeenCalled();
-    await userEvent.tab();
+    await userEvent.keyboard('{Enter}');
     expect(onApply).toHaveBeenCalledWith(
       expect.objectContaining({ field: 'name', operatorId: 'name__icontains', value: 'acme' })
     );
+  });
+
+  it('closes the popover after a typed value commits on Enter', async () => {
+    const closePopover = jest.fn();
+    const fieldDef = field({});
+    render(
+      <QuickFieldEditor
+        fieldDef={fieldDef}
+        appliedFilter={null}
+        onApply={() => {}}
+        closePopover={closePopover}
+        fetcher={jest.fn()}
+      />
+    );
+    await userEvent.type(screen.getByLabelText('Value'), 'acme');
+    await userEvent.keyboard('{Enter}');
+    expect(closePopover).toHaveBeenCalled();
   });
 
   it('does not apply a filter when the field is focused and blurred without a value', async () => {
@@ -124,7 +141,7 @@ describe('QuickFieldEditor', () => {
       />
     );
     await userEvent.type(screen.getByLabelText('Value'), ' updated');
-    await userEvent.tab();
+    await userEvent.keyboard('{Enter}');
     expect(onApply).toHaveBeenCalledWith(expect.objectContaining({ id: 'existing-id' }));
   });
 
