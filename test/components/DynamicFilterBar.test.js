@@ -85,7 +85,7 @@ describe('DynamicFilterBar', () => {
     expect(screen.queryByText('Filter')).not.toBeInTheDocument();
   });
 
-  it('calls onApply with query params derived from an applied quick filter, committed on blur', async () => {
+  it('calls onApply with query params derived from an applied quick filter, committed on Enter', async () => {
     const fetcher = jest
       .fn()
       .mockResolvedValue({ data: makeConfig({ most_used_filters: ['name'] }) });
@@ -94,8 +94,20 @@ describe('DynamicFilterBar', () => {
     await userEvent.click(await screen.findByText('Name'));
     await userEvent.type(screen.getByLabelText('Value'), 'acme');
     expect(onApply).not.toHaveBeenCalled();
-    await userEvent.tab();
+    await userEvent.keyboard('{Enter}');
     expect(onApply).toHaveBeenCalledWith({ name__icontains: 'acme' });
+  });
+
+  it('closes the quick-chip popover after the value commits on Enter', async () => {
+    const fetcher = jest
+      .fn()
+      .mockResolvedValue({ data: makeConfig({ most_used_filters: ['name'] }) });
+    render(<DynamicFilterBar filterApiUrl='/api/config' fetcher={fetcher} onApply={() => {}} />);
+    await userEvent.click(await screen.findByText('Name'));
+    const input = await screen.findByLabelText('Value');
+    await userEvent.type(input, 'acme');
+    await userEvent.keyboard('{Enter}');
+    expect(screen.queryByLabelText('Value')).not.toBeInTheDocument();
   });
 
   it('calls onFiltersChange with the initial appliedFilters on mount', async () => {
@@ -420,7 +432,7 @@ describe('DynamicFilterBar operator selection in quick-chips', () => {
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });
 
-  it('applies a non-default operator chosen from a quick-chip with multiple operators, committing the value on blur', async () => {
+  it('applies a non-default operator chosen from a quick-chip with multiple operators, committing the value on Enter', async () => {
     const fetcher = jest.fn().mockResolvedValue({ data: multiOpConfig({}) });
     const onApply = jest.fn();
     render(<DynamicFilterBar filterApiUrl='/api/config' fetcher={fetcher} onApply={onApply} />);
@@ -429,7 +441,7 @@ describe('DynamicFilterBar operator selection in quick-chips', () => {
     await userEvent.click(screen.getByRole('option', { name: 'Equals' }));
     await userEvent.type(screen.getByLabelText('Value'), 'acme');
     expect(onApply).not.toHaveBeenCalled();
-    await userEvent.tab();
+    await userEvent.keyboard('{Enter}');
     expect(onApply).toHaveBeenCalledWith({ name__exact: 'acme' });
   });
 

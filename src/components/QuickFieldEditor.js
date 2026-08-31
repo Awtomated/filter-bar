@@ -8,9 +8,17 @@ import { getDefaultOperator, getDefaultOperatorId, isEmptyFilterValue } from '..
 // Used only for fields with a single (or no) operator — DynamicFilterBar
 // routes fields with more than one operator to QuickOperatorEditor instead,
 // so there's never a choice to present here, just the value. There's no
-// Apply button: a plain text/number value commits on blur, a date/select
+// Apply button: a plain text/number value commits on Enter, a date/select
 // value commits the moment it's picked (see ValueInput's onCommit).
-function QuickFieldEditor({ fieldDef, appliedFilter, onApply, fetcher, timezone, dateFormat }) {
+function QuickFieldEditor({
+  fieldDef,
+  appliedFilter,
+  onApply,
+  closePopover,
+  fetcher,
+  timezone,
+  dateFormat,
+}) {
   const operatorId = appliedFilter?.operatorId ?? getDefaultOperatorId(fieldDef);
   const selectedOp = getDefaultOperator(fieldDef);
   const [value, setValue] = useState(appliedFilter?.value ?? null);
@@ -49,6 +57,7 @@ function QuickFieldEditor({ fieldDef, appliedFilter, onApply, fetcher, timezone,
         value={value}
         onChange={setValue}
         onCommit={commitValue}
+        closePopover={closePopover}
         fetcher={fetcher}
         timezone={timezone}
         dateFormat={dateFormat}

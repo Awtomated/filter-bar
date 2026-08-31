@@ -97,7 +97,7 @@ describe('QuickOperatorEditor', () => {
     expect(screen.getByLabelText('Value')).toHaveValue('');
   });
 
-  it('has no Apply button — a typed value commits on blur', async () => {
+  it('has no Apply button — a typed value commits on Enter', async () => {
     const onApply = jest.fn();
     const fieldDef = field({});
     render(
@@ -112,10 +112,29 @@ describe('QuickOperatorEditor', () => {
     await userEvent.click(screen.getByRole('option', { name: 'Equals' }));
     await userEvent.type(screen.getByLabelText('Value'), 'acme');
     expect(onApply).not.toHaveBeenCalled();
-    await userEvent.tab();
+    await userEvent.keyboard('{Enter}');
     expect(onApply).toHaveBeenCalledWith(
       expect.objectContaining({ field: 'name', operatorId: 'name__exact', value: 'acme' })
     );
+  });
+
+  it('closes the popover after a typed value commits on Enter', async () => {
+    const closePopover = jest.fn();
+    const fieldDef = field({});
+    render(
+      <QuickOperatorEditor
+        fieldDef={fieldDef}
+        appliedFilter={null}
+        onApply={() => {}}
+        closePopover={closePopover}
+        fetcher={jest.fn()}
+      />
+    );
+    await userEvent.click(getSelectByLabel('Operator'));
+    await userEvent.click(screen.getByRole('option', { name: 'Equals' }));
+    await userEvent.type(screen.getByLabelText('Value'), 'acme');
+    await userEvent.keyboard('{Enter}');
+    expect(closePopover).toHaveBeenCalled();
   });
 
   it('hides the value field and applies immediately when the chosen operator is "none" input_type', async () => {
@@ -185,7 +204,7 @@ describe('QuickOperatorEditor', () => {
       />
     );
     await userEvent.type(screen.getByLabelText('Value'), ' updated');
-    await userEvent.tab();
+    await userEvent.keyboard('{Enter}');
     expect(onApply).toHaveBeenCalledWith(expect.objectContaining({ id: 'existing-id' }));
   });
 });

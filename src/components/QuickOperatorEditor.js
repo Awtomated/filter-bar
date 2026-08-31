@@ -7,13 +7,14 @@ import { getDefaultOperatorId, getOperatorId, isEmptyFilterValue } from '../util
 // is fixed by the chip it's opened from) so operator+value editing behaves
 // identically to the "Filter" builder's rows. There's no Apply button:
 // picking an operator that needs no value (e.g. "Is empty") commits right
-// away, and a value commits on blur (text) or the moment it's picked
+// away, and a value commits on Enter (text) or the moment it's picked
 // (date/select) — see ValueInput's onCommit.
 function QuickOperatorEditor({
   fieldDef,
   appliedFilter,
   preferredOperatorId,
   onApply,
+  closePopover,
   fetcher,
   timezone,
   dateFormat,
@@ -54,6 +55,7 @@ function QuickOperatorEditor({
       filterFields={[fieldDef]}
       onChange={handleChange}
       onCommit={handleCommitValue}
+      closePopover={closePopover}
       fetcher={fetcher}
       timezone={timezone}
       dateFormat={dateFormat}
