@@ -15,7 +15,7 @@ import { useFilterBarLabels, useFilterBarTokens } from '../tokens';
 //
 // `onCommit`, if given, fires whenever the user's action on the current
 // widget is "complete" — immediately on picking a choice/date (there's
-// nothing more to wait for), or on blur for a plain text/number field
+// nothing more to wait for), or on Enter for a plain text/number field
 // (so every keystroke doesn't commit). It's optional — callers that manage
 // their own explicit submit (e.g. the "Filter" builder) simply don't pass it.
 function ValueInput({
@@ -24,6 +24,10 @@ function ValueInput({
   value,
   onChange,
   onCommit,
+  // Only wired up by the quick-chip popovers (see DynamicFilterBar) — the
+  // "Filter" builder doesn't pass this, so Enter there just commits the
+  // draft row without closing anything.
+  closePopover,
   fetcher,
   timezone,
   dateFormat = 'MM/DD/YYYY',
@@ -124,9 +128,11 @@ function ValueInput({
       value={value ?? ''}
       placeholder={labels.valueLabel}
       onChange={(e) => onChange(e.target.value)}
-      onBlur={() => {
+      onKeyDown={(e) => {
+        if (e.key !== 'Enter') return;
         if (value === undefined || value === null || value === '') return;
         onCommit?.(value);
+        closePopover?.();
       }}
       slotProps={{ inputLabel: { shrink: true } }}
     />
