@@ -104,6 +104,71 @@ export function matchMostUsedField(name, filterFields) {
     : null;
 }
 
+// Merges an optional per-field `fieldProps[name].fieldDef.select` config
+// onto the fieldDef as `selectConfig`. Purely additive — a field with no
+// matching entry is returned unchanged, so passing no `fieldProps` prop at
+// all reproduces today's fieldDefs exactly.
+export function applyFieldProps(fields, fieldProps) {
+  if (!fieldProps) return fields;
+  return fields.map((field) => {
+    const select = fieldProps[field.name]?.fieldDef?.select;
+    return select ? { ...field, selectConfig: select } : field;
+  });
+}
+
+function normalizeChoicesResponse(res) {
+  const data = res?.data;
+  const list = Array.isArray(data?.results) ? data.results : Array.isArray(data) ? data : [];
+  return list.map((item) => (item?.full_name ? { ...item, name: item.full_name } : item));
+}
+
+// Runs a field's `selectConfig.transformChoices` (if any) over a resolved
+// choices list — the single hook point both SelectionChoicesEditor and
+// SelectValueInput funnel through, so the handler applies uniformly whether
+// choices came from a fetch or from static fieldDef/choices options, and its
+// output is what ends up in state (and therefore what's rendered) — nothing
+// downstream (filtering, selection matching, grouping) ever sees the
+// untransformed list. A no-op when `transformChoices` isn't provided.
+export function resolveChoices(rawList, selectConfig, fieldDef) {
+  return selectConfig?.transformChoices
+    ? selectConfig.transformChoices(rawList, { fieldDef })
+    : rawList;
+}
+
+export function extractAndResolveChoices(res, selectConfig, fieldDef) {
+  return resolveChoices(normalizeChoicesResponse(res), selectConfig, fieldDef);
+}
+
+export function getGroupByFn(selectConfig) {
+  if (!selectConfig?.grouping) return null;
+  return selectConfig.groupBy ?? ((choice) => choice?.[selectConfig.groupingKey] ?? '');
+}
+
+// Sorts a choices list so same-group items are contiguous — required for
+// grouped headers, whether hand-rolled (SelectionChoicesEditor) or via MUI
+// Autocomplete's `groupBy` (SelectValueInput), which does not sort options
+// on its own — and returns the group-key function to render with. Returns
+// `{ choices, groupBy: null }` unchanged when grouping isn't enabled.
+export function applyGrouping(choices, selectConfig) {
+  const groupBy = getGroupByFn(selectConfig);
+  if (!groupBy) return { choices, groupBy: null };
+  const order = [];
+  const seen = new Set();
+  choices.forEach((choice) => {
+    const key = groupBy(choice);
+    if (!seen.has(key)) {
+      seen.add(key);
+      order.push(key);
+    }
+  });
+  const sortedKeys = [...order].sort(
+    selectConfig.sortGroups ?? ((a, b) => String(a).localeCompare(String(b)))
+  );
+  const rank = new Map(sortedKeys.map((key, i) => [key, i]));
+  const sorted = [...choices].sort((a, b) => rank.get(groupBy(a)) - rank.get(groupBy(b)));
+  return { choices: sorted, groupBy };
+}
+
 export function getChoiceId(choice) {
   return choice?.id;
 }
