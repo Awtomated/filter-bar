@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 // Named (root-barrel) imports — see the note in QuickFilterChip.js about why
 // these must not be deep `@mui/material/*`-style imports.
 import {
@@ -13,7 +13,14 @@ import {
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import { useFilterBarLabels, useFilterBarTokens } from '../tokens';
-import { getChoiceId, getChoiceLabel, getDefaultOperatorId } from '../utils';
+import {
+  applyGrouping,
+  extractAndResolveChoices,
+  getChoiceId,
+  getChoiceLabel,
+  getDefaultOperatorId,
+  resolveChoices,
+} from '../utils';
 
 // Fetch-choices effect intentionally mirrors SelectValueInput's — including
 // the `full_name -> name` normalization for endpoints that return that
@@ -29,7 +36,9 @@ function SelectionChoicesEditor({
 }) {
   const tokens = useFilterBarTokens();
   const labels = useFilterBarLabels();
-  const [choices, setChoices] = useState(fieldDef.options ?? []);
+  const [choices, setChoices] = useState(() =>
+    resolveChoices(fieldDef.options ?? [], fieldDef.selectConfig, fieldDef)
+  );
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState(() =>
     multiple ? appliedFilter?.value ?? [] : appliedFilter?.value ?? null
@@ -43,12 +52,7 @@ function SelectionChoicesEditor({
     fetcher(fieldDef.fetch_url)
       .then((res) => {
         if (!active) return;
-        const data = res?.data;
-        const list = Array.isArray(data?.results) ? data.results : Array.isArray(data) ? data : [];
-        const normalized = list.map((item) =>
-          item?.full_name ? { ...item, name: item.full_name } : item
-        );
-        setChoices(normalized);
+        setChoices(extractAndResolveChoices(res, fieldDef.selectConfig, fieldDef));
       })
       .catch(() => {
         if (active) setChoices([]);
@@ -96,6 +100,11 @@ function SelectionChoicesEditor({
     getChoiceLabel(choice).toLowerCase().includes(search.trim().toLowerCase())
   );
 
+  const { choices: groupedFilteredChoices, groupBy } = applyGrouping(
+    filteredChoices,
+    fieldDef.selectConfig
+  );
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
       <TextField
@@ -133,7 +142,7 @@ function SelectionChoicesEditor({
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
           <CircularProgress size={18} />
         </Box>
-      ) : filteredChoices.length === 0 ? (
+      ) : groupedFilteredChoices.length === 0 ? (
         <Box sx={{ py: 2, textAlign: 'center' }}>
           <Typography variant='body2' sx={{ color: 'text.secondary' }}>
             {labels.noMatches}
@@ -150,47 +159,72 @@ function SelectionChoicesEditor({
             gap: 0.5,
           }}
         >
-          {filteredChoices.map((choice) => {
-            const id = getChoiceId(choice);
-            const checked = multiple
-              ? (selected ?? []).some((c) => getChoiceId(c) === id)
-              : getChoiceId(selected) === id;
-            return (
-              <ListItemButton
-                key={id}
-                dense
-                selected={checked}
-                onClick={() => toggle(choice)}
-                sx={{
-                  borderRadius: '8px',
-                  padding: tokens.menuItemPadding,
-                  gap: 2,
-                  color: checked ? 'primary.main' : 'text.primary',
-                  fontWeight: checked ? 600 : 400,
-                  '&:hover, &.Mui-focusVisible': { bgcolor: tokens.hoverBackground },
-                  '&.Mui-selected, &.Mui-selected:hover, &.Mui-selected.Mui-focusVisible': {
-                    bgcolor: tokens.selectedBackground,
-                    color: 'primary.main',
-                  },
-                }}
-              >
-                {multiple && (
-                  <Checkbox
-                    edge='start'
-                    size='small'
-                    checked={checked}
-                    tabIndex={-1}
-                    disableRipple
-                    sx={{ p: 0, m: 0, '& .MuiSvgIcon-root': { fontSize: tokens.checkboxSize } }}
-                  />
-                )}
-                <ListItemText
-                  primary={getChoiceLabel(choice)}
-                  primaryTypographyProps={{ sx: tokens.menuItemTypographySx }}
-                />
-              </ListItemButton>
-            );
-          })}
+          {(() => {
+            let lastGroup;
+            let isFirstHeader = true;
+            return groupedFilteredChoices.map((choice) => {
+              const id = getChoiceId(choice);
+              const checked = multiple
+                ? (selected ?? []).some((c) => getChoiceId(c) === id)
+                : getChoiceId(selected) === id;
+              const groupKey = groupBy ? groupBy(choice) : null;
+              const showHeader = Boolean(groupBy) && groupKey !== lastGroup;
+              lastGroup = groupKey;
+              const isFirstGroupHeader = showHeader && isFirstHeader;
+              if (showHeader) isFirstHeader = false;
+              return (
+                <Fragment key={id}>
+                  {showHeader && (
+                    <Typography
+                      variant='caption'
+                      sx={{
+                        px: tokens.menuItemPadding,
+                        pt: isFirstGroupHeader ? 0 : 1,
+                        pb: 0.5,
+                        color: 'text.secondary',
+                        fontWeight: 600,
+                        textTransform: 'uppercase',
+                      }}
+                    >
+                      {groupKey}
+                    </Typography>
+                  )}
+                  <ListItemButton
+                    dense
+                    selected={checked}
+                    onClick={() => toggle(choice)}
+                    sx={{
+                      borderRadius: '8px',
+                      padding: tokens.menuItemPadding,
+                      gap: 2,
+                      color: checked ? 'primary.main' : 'text.primary',
+                      fontWeight: checked ? 600 : 400,
+                      '&:hover, &.Mui-focusVisible': { bgcolor: tokens.hoverBackground },
+                      '&.Mui-selected, &.Mui-selected:hover, &.Mui-selected.Mui-focusVisible': {
+                        bgcolor: tokens.selectedBackground,
+                        color: 'primary.main',
+                      },
+                    }}
+                  >
+                    {multiple && (
+                      <Checkbox
+                        edge='start'
+                        size='small'
+                        checked={checked}
+                        tabIndex={-1}
+                        disableRipple
+                        sx={{ p: 0, m: 0, '& .MuiSvgIcon-root': { fontSize: tokens.checkboxSize } }}
+                      />
+                    )}
+                    <ListItemText
+                      primary={getChoiceLabel(choice)}
+                      primaryTypographyProps={{ sx: tokens.menuItemTypographySx }}
+                    />
+                  </ListItemButton>
+                </Fragment>
+              );
+            });
+          })()}
         </Box>
       )}
     </Box>
