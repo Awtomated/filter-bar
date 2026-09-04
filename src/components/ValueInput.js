@@ -63,6 +63,8 @@ function ValueInput({
           onCommit?.(newValue);
         }}
         listboxSx={listboxSx}
+        selectConfig={fieldDef.selectConfig}
+        fieldDef={fieldDef}
       />
     );
   }
@@ -81,6 +83,8 @@ function ValueInput({
           onCommit?.(newValue);
         }}
         listboxSx={listboxSx}
+        selectConfig={fieldDef.selectConfig}
+        fieldDef={fieldDef}
       />
     );
   }

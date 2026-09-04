@@ -104,6 +104,7 @@ shape:
 | `fetcher`         | `(url) => Promise<{ data }>`               | yes      | Used for the schema fetch and any `fetch_url`-backed choices. Pass your HTTP client's `get`.  |
 | `onApply`         | `(params) => void`                         | no       | Called with the flattened query params object every time a filter changes.                    |
 | `choicesMap`      | `{ [field]: { options } \| { fetchUrl } }` | no       | Force specific fields to use these choices instead of the schema's own `options`/`fetch_url`. |
+| `fieldProps`      | `{ [field]: { fieldDef: { select } } }`    | no       | Per-field choices behavior overrides (transform/group) — see below.                           |
 | `appliedFilters`  | array                                      | no       | Initial filter state (controlled from outside).                                               |
 | `onFiltersChange` | `(filters) => void`                        | no       | Fires on every filter state change, before `onApply`'s param flattening.                      |
 | `timezone`        | string (IANA)                              | no       | Defaults to the browser's detected timezone. Used to serialize/parse date field values.       |
@@ -114,6 +115,47 @@ shape:
 
 `FilterToggleButton` is a plain controlled `IconButton` — `active: boolean`, `onClick: () => void`,
 optional `icon`/`tooltip`, plus any other `IconButtonProps`.
+
+## Per-field choices behavior (`fieldProps`)
+
+`choicesMap` controls _where_ a field's choices come from; `fieldProps` controls _how_ they're
+transformed and rendered once fetched. It's keyed by field name and is purely additive — a field
+with no entry, or the prop omitted entirely, behaves exactly as if `fieldProps` didn't exist.
+
+```jsx
+<DynamicFilterBar
+  // ...
+  fieldProps={{
+    status: {
+      fieldDef: {
+        select: {
+          // Runs once, right before the choices reach the Autocomplete's
+          // `options` or the quick chip's list — for a fetched OR a static
+          // `options` list. Use it to reshape/filter/sort/annotate choices,
+          // e.g. attach a group key the API response doesn't provide.
+          transformChoices: (choices) =>
+            choices.map((c) => ({ ...c, category: c.is_active ? 'Active' : 'Archived' })),
+
+          // Renders a header above each group of choices, both in the
+          // quick-chip selection list and in the "Filter" builder's
+          // Autocomplete.
+          grouping: true,
+          groupingKey: 'category', // or: groupBy: (choice) => choice.category
+          sortGroups: (a, b) => a.localeCompare(b), // optional, defaults to alphabetical
+        },
+      },
+    },
+  }}
+/>
+```
+
+- `transformChoices(choices, { fieldDef }) => choices` — optional. Receives the resolved choices
+  list (already normalized, e.g. `full_name` → `name`) and returns the list to actually render.
+- `grouping` — optional, defaults to `false`.
+- `groupingKey` — property name read off each choice to determine its group. Ignored if `groupBy` is
+  given.
+- `groupBy` — optional `(choice) => string`, takes precedence over `groupingKey`.
+- `sortGroups` — optional `(a, b) => number` comparator over group keys; defaults to alphabetical.
 
 ## Theming & customization
 
@@ -139,9 +181,10 @@ would anywhere else in your app.
 
 ## Advanced: building custom UI on the same logic
 
-`buildQueryParams`, `adaptApiConfig`, `applyChoicesMap`, `getDefaultOperatorId`, `isSelectionField`,
-and `isMultiSelectionField` are all exported as pure functions if you want to build a different UI
-on top of the same filter-config contract, or reuse `QuickFilterChip` as a building block.
+`buildQueryParams`, `adaptApiConfig`, `applyChoicesMap`, `applyFieldProps`, `getDefaultOperatorId`,
+`isSelectionField`, and `isMultiSelectionField` are all exported as pure functions if you want to
+build a different UI on top of the same filter-config contract, or reuse `QuickFilterChip` as a
+building block.
 
 ## Development
 
