@@ -104,7 +104,7 @@ shape:
 | `fetcher`         | `(url) => Promise<{ data }>`               | yes      | Used for the schema fetch and any `fetch_url`-backed choices. Pass your HTTP client's `get`.  |
 | `onApply`         | `(params) => void`                         | no       | Called with the flattened query params object every time a filter changes.                    |
 | `choicesMap`      | `{ [field]: { options } \| { fetchUrl } }` | no       | Force specific fields to use these choices instead of the schema's own `options`/`fetch_url`. |
-| `fieldProps`      | `{ [field]: { fieldDef: { select } } }`    | no       | Per-field choices behavior overrides (transform/group) — see below.                           |
+| `fieldProps`      | `{ [field]: { fieldDef: { select } } }`    | no       | Per-field choices behavior overrides (transform/group/label) — see below.                     |
 | `appliedFilters`  | array                                      | no       | Initial filter state (controlled from outside).                                               |
 | `onFiltersChange` | `(filters) => void`                        | no       | Fires on every filter state change, before `onApply`'s param flattening.                      |
 | `timezone`        | string (IANA)                              | no       | Defaults to the browser's detected timezone. Used to serialize/parse date field values.       |
@@ -142,6 +142,13 @@ with no entry, or the prop omitted entirely, behaves exactly as if `fieldProps` 
           grouping: true,
           groupingKey: 'category', // or: groupBy: (choice) => choice.category
           sortGroups: (a, b) => a.localeCompare(b), // optional, defaults to alphabetical
+
+          // Controls the display text for each choice, both in the
+          // quick-chip selection list and in the "Filter" builder's
+          // Autocomplete (its selected-value chips included). Takes
+          // priority over every built-in label fallback.
+          formatOptionLabel: (choice) =>
+            `${choice.name} (${choice.is_active ? 'Active' : 'Archived'})`,
         },
       },
     },
@@ -156,6 +163,8 @@ with no entry, or the prop omitted entirely, behaves exactly as if `fieldProps` 
   given.
 - `groupBy` — optional `(choice) => string`, takes precedence over `groupingKey`.
 - `sortGroups` — optional `(a, b) => number` comparator over group keys; defaults to alphabetical.
+- `formatOptionLabel(choice, { fieldDef }) => string` — optional. Overrides the label shown for a
+  choice everywhere it's rendered as text (list item, search matching, selected-value chip).
 
 ## Theming & customization
 

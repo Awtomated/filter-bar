@@ -97,7 +97,9 @@ function SelectionChoicesEditor({
   }
 
   const filteredChoices = choices.filter((choice) =>
-    getChoiceLabel(choice).toLowerCase().includes(search.trim().toLowerCase())
+    getChoiceLabel(choice, fieldDef.selectConfig, fieldDef)
+      .toLowerCase()
+      .includes(search.trim().toLowerCase())
   );
 
   const { choices: groupedFilteredChoices, groupBy } = applyGrouping(
@@ -217,7 +219,7 @@ function SelectionChoicesEditor({
                       />
                     )}
                     <ListItemText
-                      primary={getChoiceLabel(choice)}
+                      primary={getChoiceLabel(choice, fieldDef.selectConfig, fieldDef)}
                       primaryTypographyProps={{ sx: tokens.menuItemTypographySx }}
                     />
                   </ListItemButton>
