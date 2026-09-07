@@ -82,7 +82,7 @@ function SelectValueInput({
       limitTags={multiple ? 1 : undefined}
       open={open}
       onOpen={() => setOpen(true)}
-      //  onClose={() => setOpen(false)}
+      onClose={() => setOpen(false)}
       options={options}
       groupBy={groupBy}
       loading={loading && !choices}
