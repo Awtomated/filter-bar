@@ -4,8 +4,11 @@ import { useEffect, useState } from 'react';
 import { Autocomplete, CircularProgress, TextField } from '@mui/material';
 import { applyGrouping, extractAndResolveChoices, getGroupByFn, resolveChoices } from '../utils';
 
-function getOptionLabel(option) {
+// `selectConfig.formatOptionLabel(option, { fieldDef }) => string` — optional
+// per-field override, checked before any of the built-in fallbacks below.
+function getOptionLabel(option, selectConfig, fieldDef) {
   if (!option) return '';
+  if (selectConfig?.formatOptionLabel) return selectConfig.formatOptionLabel(option, { fieldDef });
   if (option.code && option.title) return `${option.code} - ${option.title}`;
   if (option.language_code && option.language)
     return `${option.language_code} - ${option.language}`;
@@ -85,7 +88,7 @@ function SelectValueInput({
       loading={loading && !choices}
       value={multiple ? value ?? [] : value ?? null}
       onChange={(_, newValue) => onChange(newValue)}
-      getOptionLabel={getOptionLabel}
+      getOptionLabel={(option) => getOptionLabel(option, selectConfig, fieldDef)}
       isOptionEqualToValue={(opt, val) => opt?.id === val?.id}
       renderInput={(params) => (
         <TextField

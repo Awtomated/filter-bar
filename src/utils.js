@@ -173,8 +173,13 @@ export function getChoiceId(choice) {
   return choice?.id;
 }
 
-export function getChoiceLabel(choice) {
+// `selectConfig.formatOptionLabel(choice, { fieldDef }) => string` — optional
+// per-field override, checked before any of the built-in fallbacks below.
+// Lets a caller control display text without needing to reshape the choice
+// objects themselves (e.g. via `transformChoices`).
+export function getChoiceLabel(choice, selectConfig, fieldDef) {
   if (!choice) return '';
+  if (selectConfig?.formatOptionLabel) return selectConfig.formatOptionLabel(choice, { fieldDef });
   if (choice?.language_code && choice?.language)
     return `${choice?.language_code} - ${choice?.language}`;
   return choice.label || choice.title || choice.name || choice.subtitle || String(choice.id ?? '');
