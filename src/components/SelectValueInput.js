@@ -2,9 +2,13 @@ import { useEffect, useState } from 'react';
 // Named (root-barrel) imports — see the note in QuickFilterChip.js about why
 // these must not be deep `@mui/material/*`-style imports.
 import { Autocomplete, CircularProgress, TextField } from '@mui/material';
+import { applyGrouping, extractAndResolveChoices, getGroupByFn, resolveChoices } from '../utils';
 
-function getOptionLabel(option) {
+// `selectConfig.formatOptionLabel(option, { fieldDef }) => string` — optional
+// per-field override, checked before any of the built-in fallbacks below.
+function getOptionLabel(option, selectConfig, fieldDef) {
   if (!option) return '';
+  if (selectConfig?.formatOptionLabel) return selectConfig.formatOptionLabel(option, { fieldDef });
   if (option.code && option.title) return `${option.code} - ${option.title}`;
   if (option.language_code && option.language)
     return `${option.language_code} - ${option.language}`;
@@ -25,14 +29,19 @@ function SelectValueInput({
   onChange,
   listboxSx,
   multiple = false,
+  selectConfig,
+  fieldDef,
 }) {
   const [open, setOpen] = useState(false);
-  const [options, setOptions] = useState(choices ?? []);
+  const [options, setOptions] = useState(
+    () => applyGrouping(resolveChoices(choices ?? [], selectConfig, fieldDef), selectConfig).choices
+  );
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (choices) {
-      setOptions(choices);
+      const resolved = resolveChoices(choices, selectConfig, fieldDef);
+      setOptions(applyGrouping(resolved, selectConfig).choices);
       return;
     }
     if (!open || !choicesAPI) {
@@ -44,15 +53,11 @@ function SelectValueInput({
     fetcher(choicesAPI)
       .then((res) => {
         if (!active) return;
-        const data = res?.data;
-        const list = Array.isArray(data?.results) ? data.results : Array.isArray(data) ? data : [];
         // Some choice endpoints return `full_name` instead of `name` — treat
         // it as the canonical display name so getOptionLabel/getChoiceLabel
         // don't fall back to a raw numeric id.
-        const normalized = list.map((item) =>
-          item?.full_name ? { ...item, name: item.full_name } : item
-        );
-        setOptions(normalized);
+        const resolved = extractAndResolveChoices(res, selectConfig, fieldDef);
+        setOptions(applyGrouping(resolved, selectConfig).choices);
       })
       .catch(() => {
         if (active) setOptions([]);
@@ -63,7 +68,9 @@ function SelectValueInput({
     return () => {
       active = false;
     };
-  }, [open, choicesAPI, choices, fetcher]);
+  }, [open, choicesAPI, choices, fetcher, selectConfig, fieldDef]);
+
+  const groupBy = getGroupByFn(selectConfig) ?? undefined;
 
   return (
     <Autocomplete
@@ -77,10 +84,11 @@ function SelectValueInput({
       onOpen={() => setOpen(true)}
       onClose={() => setOpen(false)}
       options={options}
+      groupBy={groupBy}
       loading={loading && !choices}
       value={multiple ? value ?? [] : value ?? null}
       onChange={(_, newValue) => onChange(newValue)}
-      getOptionLabel={getOptionLabel}
+      getOptionLabel={(option) => getOptionLabel(option, selectConfig, fieldDef)}
       isOptionEqualToValue={(opt, val) => opt?.id === val?.id}
       renderInput={(params) => (
         <TextField

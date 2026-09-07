@@ -60,7 +60,7 @@ function FilterRow({
       )}
 
       {showField && (
-        <FormControl size='small' sx={{ minWidth: 140 }}>
+        <FormControl size='small' sx={{ minWidth: 140, maxWidth: 140 }}>
           <InputLabel shrink>{labels.fieldLabel}</InputLabel>
           <Select
             value={filter.field}
@@ -124,6 +124,8 @@ function FilterRow({
         <InputLabel shrink>{labels.operatorLabel}</InputLabel>
         <Select
           value={filter.operatorId ?? ''}
+          xxx
+          sd
           label={labels.operatorLabel}
           notched
           inputProps={{ readOnly: operators.length <= 1 }}

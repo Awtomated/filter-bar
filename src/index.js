@@ -6,6 +6,7 @@ export { DynamicFilterProvider, defaultTokens, defaultLabels } from './tokens';
 export {
   adaptApiConfig,
   applyChoicesMap,
+  applyFieldProps,
   buildQueryParams,
   getChoiceId,
   getChoiceLabel,

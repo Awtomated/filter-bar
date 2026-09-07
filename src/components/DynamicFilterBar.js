@@ -12,6 +12,7 @@ import { DynamicFilterProvider, useFilterBarLabels, useFilterBarTokens } from '.
 import {
   adaptApiConfig,
   applyChoicesMap,
+  applyFieldProps,
   buildQueryParams,
   isMultiSelectionField,
   isSelectionField,
@@ -33,6 +34,7 @@ function DynamicFilterBarInner({
   fetcher,
   onApply,
   choicesMap = {},
+  fieldProps = {},
   appliedFilters = [],
   onFiltersChange,
   timezone,
@@ -75,7 +77,9 @@ function DynamicFilterBarInner({
 
   const baseFilterFields = adaptApiConfig(filterConfig);
 
-  const filterFields = applyChoicesMap(baseFilterFields, choicesMap);
+  const fieldsWithChoices = applyChoicesMap(baseFilterFields, choicesMap);
+
+  const filterFields = applyFieldProps(fieldsWithChoices, fieldProps);
 
   const mostUsedNames = filterConfig?.most_used_filters ?? [];
   const hasMostUsed = mostUsedNames.length > 0;
