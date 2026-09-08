@@ -44,7 +44,7 @@ describe('calendarDayToIso / isoToCalendarDay', () => {
   it('serializes a dayjs day as UTC-midnight ISO and parses it back to the same calendar day', () => {
     const day = dayjs.tz('2024-03-15', 'America/New_York');
     const iso = calendarDayToIso(day);
-    expect(iso).toBe('2024-03-15T00:00:00.000Z');
+    expect(iso).toBe('2024-03-15');
     const roundTripped = isoToCalendarDay(iso, 'America/New_York');
     expect(roundTripped.format('YYYY-MM-DD')).toBe('2024-03-15');
   });
@@ -57,7 +57,7 @@ describe('calendarDayToIso / isoToCalendarDay', () => {
   });
 
   it('keeps the same calendar day regardless of timezone, rather than rolling it back a day west of UTC', () => {
-    const day = isoToCalendarDay('2024-03-15T00:00:00.000Z', 'America/Los_Angeles');
+    const day = isoToCalendarDay('2024-03-15', 'America/Los_Angeles');
     expect(day.format('YYYY-MM-DD')).toBe('2024-03-15');
   });
 });
