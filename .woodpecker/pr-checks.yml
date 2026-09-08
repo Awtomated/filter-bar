@@ -23,7 +23,7 @@ steps:
     image: node:22-alpine
     depends_on: [install]
     commands:
-      - yarn test --coverage --coverageReporters=lcov --coverageReporters=text-summary
+      - yarn test --coverage --coverageReporters=lcov --coverageReporters=text-summary --coverageThreshold='{"global":{"branches":90,"functions":90,"lines":90,"statements":90}}'
 
   - name: build-smoke-test
     image: node:22-alpine
