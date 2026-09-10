@@ -89,6 +89,36 @@ describe('FilterRow', () => {
     expect(screen.queryByLabelText('Value')).not.toBeInTheDocument();
   });
 
+  it('shows a blank field label when filter.field matches no field def', () => {
+    const nameField = field({});
+    const filter = { id: '1', field: 'nonexistent', operatorId: 'name__icontains', value: '' };
+    render(
+      <FilterRow
+        filter={filter}
+        filterFields={[nameField]}
+        onRemove={() => {}}
+        onChange={() => {}}
+        fetcher={jest.fn()}
+      />
+    );
+    expect(getSelectByLabel('Field').textContent.replace(/​/g, '')).toBe('');
+  });
+
+  it('renders the operator select with no selection when filter.operatorId is nullish', () => {
+    const nameField = field({});
+    const filter = { id: '1', field: 'name', operatorId: undefined, value: '' };
+    render(
+      <FilterRow
+        filter={filter}
+        filterFields={[nameField]}
+        onRemove={() => {}}
+        onChange={() => {}}
+        fetcher={jest.fn()}
+      />
+    );
+    expect(getSelectByLabel('Operator')).toBeInTheDocument();
+  });
+
   it('calls onRemove when the remove (close) icon button is clicked', async () => {
     const onRemove = jest.fn();
     const nameField = field({});
@@ -224,6 +254,25 @@ describe('FilterRow', () => {
     await userEvent.type(screen.getByPlaceholderText('Search field...'), 'stat');
     expect(screen.queryByRole('option', { name: 'Name' })).not.toBeInTheDocument();
     expect(screen.getByRole('option', { name: 'Status' })).toBeInTheDocument();
+  });
+
+  it('keeps the field dropdown open on Escape from within the search box (propagation stopped at the subheader)', async () => {
+    const nameField = field({});
+    const filter = { id: '1', field: 'name', operatorId: 'name__icontains', value: '' };
+    render(
+      <FilterRow
+        filter={filter}
+        filterFields={[nameField]}
+        onRemove={() => {}}
+        onChange={() => {}}
+        fetcher={jest.fn()}
+      />
+    );
+    await userEvent.click(getSelectByLabel('Field'));
+    const search = screen.getByPlaceholderText('Search field...');
+    expect(search).toHaveFocus();
+    await userEvent.keyboard('{Escape}');
+    expect(screen.getByRole('listbox')).toBeInTheDocument();
   });
 
   it('keeps showing the selected field label after filtering it out of the dropdown', async () => {

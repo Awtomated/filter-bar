@@ -227,6 +227,59 @@ describe('DynamicFilterBar', () => {
     });
   });
 
+  it('clears an applied filter on a regular (non-selection) quick chip via its clear control', async () => {
+    const fetcher = jest
+      .fn()
+      .mockResolvedValue({ data: makeConfig({ most_used_filters: ['name'] }) });
+    const onApply = jest.fn();
+    render(<DynamicFilterBar filterApiUrl='/api/config' fetcher={fetcher} onApply={onApply} />);
+    await userEvent.click(await screen.findByText('Name'));
+    await userEvent.type(screen.getByLabelText('Value'), 'acme');
+    await userEvent.keyboard('{Enter}');
+    expect(onApply).toHaveBeenLastCalledWith({ name__icontains: 'acme' });
+
+    await userEvent.click(screen.getByRole('button', { name: 'Clear filter' }));
+    expect(onApply).toHaveBeenLastCalledWith({});
+  });
+
+  it('renders a most-used date field with multiple operators (non-selection) via QuickDateOperatorEditor', async () => {
+    const fetcher = jest.fn().mockResolvedValue({
+      data: makeConfig({
+        filters: {
+          startdate: {
+            field: 'startdate',
+            label: 'Start Date',
+            default_operator: 'gte',
+            operators: [
+              {
+                label: 'From',
+                value: 'gte',
+                query_param: 'startdate__gte',
+                input_type: 'single',
+                input_field: 'date',
+              },
+              {
+                label: 'Between',
+                value: 'between',
+                query_params: 'startdate_range',
+                input_type: 'range',
+                input_field: 'date',
+              },
+            ],
+          },
+        },
+        most_used_filters: ['startdate'],
+      }),
+    });
+    render(<DynamicFilterBar filterApiUrl='/api/config' fetcher={fetcher} />);
+    const chip = await screen.findByText('Start Date');
+    await userEvent.click(chip);
+    // QuickDateOperatorEditor renders an operator select above the calendar,
+    // unlike QuickFieldEditor (used for a single-operator date field).
+    expect(screen.getByRole('button', { name: 'Today' })).toBeInTheDocument();
+    expect(screen.getAllByText('Operator').length).toBeGreaterThan(0);
+  });
+
   it('applies and clears filters via the trailing "Filter" builder chip', async () => {
     const fetcher = jest.fn().mockResolvedValue({ data: makeConfig({}) });
     const onApply = jest.fn();

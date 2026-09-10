@@ -145,6 +145,27 @@ describe('QuickFieldEditor', () => {
     expect(onApply).toHaveBeenCalledWith(expect.objectContaining({ id: 'existing-id' }));
   });
 
+  it('does not apply when a select value is cleared back to null', async () => {
+    const onApply = jest.fn();
+    const fieldDef = field({
+      options: [{ id: 1, label: 'Open' }],
+      operators: [op({ input_field: 'select', query_param: 'name' })],
+    });
+    render(
+      <QuickFieldEditor
+        fieldDef={fieldDef}
+        appliedFilter={null}
+        onApply={onApply}
+        fetcher={jest.fn()}
+      />
+    );
+    await userEvent.click(screen.getByLabelText('Value'));
+    await userEvent.click(await screen.findByText('Open'));
+    expect(onApply).toHaveBeenCalledTimes(1);
+    await userEvent.click(screen.getByLabelText('Clear'));
+    expect(onApply).toHaveBeenCalledTimes(1);
+  });
+
   it('applies immediately when the field has a single value-less ("none") operator', () => {
     const onApply = jest.fn();
     const noneOp = op({ input_type: 'none', query_param: 'name__isnull', query_value: 'true' });
