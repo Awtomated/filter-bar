@@ -2,12 +2,16 @@ import dayjs from 'dayjs';
 import {
   adaptApiConfig,
   applyChoicesMap,
+  applyFieldProps,
+  applyGrouping,
   buildQueryParams,
   calendarDayToIso,
+  extractAndResolveChoices,
   getChoiceId,
   getChoiceLabel,
   getDefaultOperator,
   getDefaultOperatorId,
+  getGroupByFn,
   getOperatorId,
   isEmptyFilterValue,
   isMultiSelectionField,
@@ -15,6 +19,7 @@ import {
   isSelectionField,
   makeFilter,
   matchMostUsedField,
+  resolveChoices,
 } from '../src/utils';
 
 function op(overrides) {
@@ -75,6 +80,11 @@ describe('getOperatorId', () => {
 
   it('keys every other operator by query_param alone', () => {
     expect(getOperatorId(op({ query_param: 'name__icontains' }))).toBe('name__icontains');
+  });
+
+  it('defaults query_value to an empty string for a "none" operator that does not specify one', () => {
+    const noValue = op({ input_type: 'none', query_param: 'name__isnull', query_value: undefined });
+    expect(getOperatorId(noValue)).toBe('name__isnull:');
   });
 
   it('falls back to value when query_param is absent (e.g. a range-shaped "Between" operator)', () => {
@@ -218,6 +228,99 @@ describe('buildQueryParams', () => {
     expect(buildQueryParams(filters, rangeFields)).toEqual({
       startdate_range: '2024-03-01T00:00:00.000Z,2024-03-10T00:00:00.000Z',
     });
+  });
+
+  it('skips a filter whose operatorId matches no operator on its field', () => {
+    const filters = [{ id: '1', field: 'name', operatorId: 'nonexistent', value: 'acme' }];
+    expect(buildQueryParams(filters, fields)).toEqual({});
+  });
+
+  it('defaults query_value to "true" for a "none" operator that does not specify one', () => {
+    const noneFields = [
+      field({
+        name: 'archived',
+        operators: [
+          op({
+            query_param: 'archived__isnull',
+            value: 'exact',
+            input_type: 'none',
+            query_value: undefined,
+          }),
+        ],
+      }),
+    ];
+    const filters = [
+      { id: '1', field: 'archived', operatorId: getOperatorId(noneFields[0].operators[0]) },
+    ];
+    expect(buildQueryParams(filters, noneFields)).toEqual({ archived__isnull: 'true' });
+  });
+
+  it('serializes an array value joining by the option value when the field has options', () => {
+    const optionFields = [
+      field({
+        name: 'tags',
+        options: [
+          { id: 1, label: 'A', value: 'a' },
+          { id: 2, label: 'B', value: 'b' },
+        ],
+        operators: [op({ query_param: 'tags__in', value: 'in' })],
+      }),
+    ];
+    const filters = [
+      {
+        id: '1',
+        field: 'tags',
+        operatorId: 'tags__in',
+        value: [
+          { id: 1, label: 'A', value: 'a' },
+          { id: 2, label: 'B', value: 'b' },
+        ],
+      },
+    ];
+    expect(buildQueryParams(filters, optionFields)).toEqual({ tags__in: 'a,b' });
+  });
+
+  it("falls back to the operator's own query_param for a range value when query_params is absent", () => {
+    const rangeFields = [
+      field({
+        name: 'startdate',
+        operators: [
+          op({
+            label: 'Between',
+            value: 'between',
+            query_param: 'startdate_range',
+            query_params: undefined,
+            input_type: 'range',
+            input_field: 'date',
+          }),
+        ],
+      }),
+    ];
+    const filters = [
+      {
+        id: '1',
+        field: 'startdate',
+        operatorId: 'startdate_range',
+        value: { start: '2024-03-01T00:00:00.000Z', end: '2024-03-10T00:00:00.000Z' },
+      },
+    ];
+    expect(buildQueryParams(filters, rangeFields)).toEqual({
+      startdate_range: '2024-03-01T00:00:00.000Z,2024-03-10T00:00:00.000Z',
+    });
+  });
+
+  it('serializes an { id } object value by its id when the field has no options', () => {
+    const noOptionFields = [
+      field({
+        name: 'company',
+        options: null,
+        operators: [op({ query_param: 'company', value: 'exact', input_field: 'select' })],
+      }),
+    ];
+    const filters = [
+      { id: '1', field: 'company', operatorId: 'company', value: { id: 42, name: 'Acme' } },
+    ];
+    expect(buildQueryParams(filters, noOptionFields)).toEqual({ company: '42' });
   });
 
   it('skips a range value that is missing either end', () => {
@@ -377,6 +480,131 @@ describe('getChoiceId / getChoiceLabel', () => {
     expect(getChoiceLabel({ name: 'N', id: 1 })).toBe('N');
     expect(getChoiceLabel({ id: 1 })).toBe('1');
   });
+
+  it('formats a language_code + language choice as "code - language"', () => {
+    expect(getChoiceLabel({ language_code: 'en', language: 'English' })).toBe('en - English');
+  });
+
+  it('falls back to subtitle when label, title, and name are all absent', () => {
+    expect(getChoiceLabel({ id: 1, subtitle: 'A subtitle' })).toBe('A subtitle');
+  });
+
+  it('falls back to an empty string when no label, title, name, subtitle, or id is present', () => {
+    expect(getChoiceLabel({})).toBe('');
+  });
+
+  it('prefers selectConfig.formatOptionLabel over every built-in fallback', () => {
+    const selectConfig = { formatOptionLabel: (choice) => `custom:${choice.id}` };
+    expect(
+      getChoiceLabel({ id: 1, label: 'L', language_code: 'en', language: 'English' }, selectConfig)
+    ).toBe('custom:1');
+  });
+});
+
+describe('applyFieldProps', () => {
+  it('returns fields unchanged when fieldProps is not provided', () => {
+    const fields = [{ name: 'name' }];
+    expect(applyFieldProps(fields, undefined)).toBe(fields);
+  });
+
+  it('leaves a field untouched when it has no matching fieldProps entry', () => {
+    const fields = [{ name: 'name' }];
+    expect(applyFieldProps(fields, { status: { fieldDef: { select: {} } } })).toEqual(fields);
+  });
+
+  it("merges a matching entry's fieldDef.select as selectConfig onto the field", () => {
+    const fields = [{ name: 'status' }];
+    const select = { grouping: true, groupingKey: 'category' };
+    const [result] = applyFieldProps(fields, { status: { fieldDef: { select } } });
+    expect(result.selectConfig).toBe(select);
+  });
+
+  it('does not add selectConfig when the matching entry has no fieldDef.select', () => {
+    const fields = [{ name: 'status' }];
+    const [result] = applyFieldProps(fields, { status: {} });
+    expect(result.selectConfig).toBeUndefined();
+  });
+});
+
+describe('resolveChoices / extractAndResolveChoices', () => {
+  const rawList = [{ id: 1, name: 'Alpha' }];
+
+  it('returns the raw list unchanged when there is no transformChoices', () => {
+    expect(resolveChoices(rawList, undefined, {})).toBe(rawList);
+    expect(resolveChoices(rawList, {}, {})).toBe(rawList);
+  });
+
+  it('runs selectConfig.transformChoices over the raw list, passing the fieldDef through', () => {
+    const fieldDef = { name: 'status' };
+    const transformChoices = jest.fn((list) => list.map((item) => ({ ...item, tagged: true })));
+    const result = resolveChoices(rawList, { transformChoices }, fieldDef);
+    expect(transformChoices).toHaveBeenCalledWith(rawList, { fieldDef });
+    expect(result).toEqual([{ id: 1, name: 'Alpha', tagged: true }]);
+  });
+
+  it('normalizes a fetch response and then applies transformChoices', () => {
+    const transformChoices = jest.fn((list) => list.map((item) => ({ ...item, tagged: true })));
+    const res = { data: { results: [{ id: 1, full_name: 'Full Name Co.' }] } };
+    const result = extractAndResolveChoices(res, { transformChoices }, {});
+    expect(result).toEqual([
+      { id: 1, full_name: 'Full Name Co.', name: 'Full Name Co.', tagged: true },
+    ]);
+  });
+
+  it('normalizes a nullish/unshaped response to an empty list rather than throwing', () => {
+    expect(extractAndResolveChoices(undefined, undefined, {})).toEqual([]);
+    expect(extractAndResolveChoices({ data: { count: 0 } }, undefined, {})).toEqual([]);
+  });
+});
+
+describe('getGroupByFn / applyGrouping', () => {
+  it('returns null when selectConfig has no grouping', () => {
+    expect(getGroupByFn(undefined)).toBeNull();
+    expect(getGroupByFn({ grouping: false })).toBeNull();
+  });
+
+  it('returns the explicit groupBy function when provided', () => {
+    const groupBy = (choice) => choice.category;
+    expect(getGroupByFn({ grouping: true, groupBy })).toBe(groupBy);
+  });
+
+  it('falls back to grouping by groupingKey when no groupBy function is given', () => {
+    const fn = getGroupByFn({ grouping: true, groupingKey: 'category' });
+    expect(fn({ category: 'Fruit' })).toBe('Fruit');
+    expect(fn({})).toBe('');
+  });
+
+  it('returns choices unchanged with a null groupBy when grouping is not enabled', () => {
+    const choices = [{ id: 1 }, { id: 2 }];
+    expect(applyGrouping(choices, undefined)).toEqual({ choices, groupBy: null });
+  });
+
+  it('sorts choices so same-group items are contiguous, grouped alphabetically by default', () => {
+    const choices = [
+      { id: 1, category: 'Veg', name: 'Carrot' },
+      { id: 2, category: 'Fruit', name: 'Apple' },
+      { id: 3, category: 'Veg', name: 'Pea' },
+    ];
+    const { choices: sorted, groupBy } = applyGrouping(choices, {
+      grouping: true,
+      groupingKey: 'category',
+    });
+    expect(sorted.map((c) => c.category)).toEqual(['Fruit', 'Veg', 'Veg']);
+    expect(groupBy(choices[0])).toBe('Veg');
+  });
+
+  it('orders groups using a custom sortGroups comparator', () => {
+    const choices = [
+      { id: 1, category: 'Fruit' },
+      { id: 2, category: 'Veg' },
+    ];
+    const { choices: sorted } = applyGrouping(choices, {
+      grouping: true,
+      groupingKey: 'category',
+      sortGroups: (a, b) => String(b).localeCompare(String(a)),
+    });
+    expect(sorted.map((c) => c.category)).toEqual(['Veg', 'Fruit']);
+  });
 });
 
 describe('isEmptyFilterValue', () => {
@@ -485,6 +713,11 @@ describe('matchMostUsedField', () => {
 
   it('returns null when nothing matches', () => {
     expect(matchMostUsedField('nonexistent', filterFields)).toBeNull();
+  });
+
+  it('treats a field with no operators list as contributing no operator matches', () => {
+    const noOpsField = { name: 'archived', label: 'Archived' };
+    expect(matchMostUsedField('anything', [noOpsField])).toBeNull();
   });
 
   it('prefers a direct field-name match over a coincidentally-equal operator query_param', () => {

@@ -196,6 +196,27 @@ describe('ValueInput', () => {
     expect(screen.getByRole('gridcell', { name: '10', selected: true })).toBeInTheDocument();
   });
 
+  it('renders a compact read-only date field (not an inline calendar) when dateDisplay is "field"', async () => {
+    render(
+      <ValueInput
+        fieldDef={{}}
+        selectedOp={{ input_field: 'date', value: 'gte' }}
+        value='2024-03-15T00:00:00.000Z'
+        onChange={() => {}}
+        fetcher={jest.fn()}
+        timezone='UTC'
+        dateFormat='MM/DD/YYYY'
+        dateDisplay='field'
+      />
+    );
+    const field = screen.getByLabelText('Value');
+    expect(field).toHaveAttribute('readonly');
+    expect(field).toHaveValue('03/15/2024');
+    expect(screen.queryByRole('gridcell', { name: '15' })).not.toBeInTheDocument();
+    await userEvent.click(field);
+    expect(screen.getByRole('gridcell', { name: '15' })).toBeInTheDocument();
+  });
+
   it('renders a number text field when the selected operator input_field is "number"', () => {
     render(
       <ValueInput

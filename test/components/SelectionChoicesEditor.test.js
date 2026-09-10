@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import SelectionChoicesEditor from '../../src/components/SelectionChoicesEditor';
 
@@ -81,6 +81,56 @@ describe('SelectionChoicesEditor', () => {
     expect(await screen.findByText('No matches found')).toBeInTheDocument();
   });
 
+  it('ignores a choices fetch that resolves after the component has unmounted', async () => {
+    let resolvePromise;
+    const fetcher = jest.fn(
+      () =>
+        new Promise((resolve) => {
+          resolvePromise = resolve;
+        })
+    );
+    const def = fieldDef({ fetch_url: '/api/statuses' });
+    const { unmount } = render(
+      <SelectionChoicesEditor
+        fieldDef={def}
+        appliedFilter={null}
+        onApply={() => {}}
+        fetcher={fetcher}
+      />
+    );
+    expect(fetcher).toHaveBeenCalled();
+    unmount();
+    await act(async () => {
+      resolvePromise({ data: { results: [{ id: 1, name: 'Fetched' }] } });
+      await Promise.resolve();
+    });
+  });
+
+  it('ignores a choices fetch that rejects after the component has unmounted', async () => {
+    let rejectPromise;
+    const fetcher = jest.fn(
+      () =>
+        new Promise((_, reject) => {
+          rejectPromise = reject;
+        })
+    );
+    const def = fieldDef({ fetch_url: '/api/statuses' });
+    const { unmount } = render(
+      <SelectionChoicesEditor
+        fieldDef={def}
+        appliedFilter={null}
+        onApply={() => {}}
+        fetcher={fetcher}
+      />
+    );
+    expect(fetcher).toHaveBeenCalled();
+    unmount();
+    await act(async () => {
+      rejectPromise(new Error('too late'));
+      await Promise.resolve();
+    });
+  });
+
   it('filters choices by the search box text (case-insensitively)', async () => {
     const def = fieldDef({
       options: [
@@ -145,6 +195,48 @@ describe('SelectionChoicesEditor', () => {
       expect.objectContaining({ field: 'status', value: [] })
     );
     expect(onSelectSingle).not.toHaveBeenCalled();
+  });
+
+  it('single mode: applying a choice works fine without an onSelectSingle callback', async () => {
+    const onApply = jest.fn();
+    const def = fieldDef({ options: [{ id: 1, label: 'Open' }] });
+    render(
+      <SelectionChoicesEditor
+        fieldDef={def}
+        appliedFilter={null}
+        onApply={onApply}
+        multiple={false}
+        fetcher={jest.fn()}
+      />
+    );
+    await userEvent.click(screen.getByText('Open'));
+    expect(onApply).toHaveBeenCalledWith(
+      expect.objectContaining({ field: 'status', value: { id: 1, label: 'Open' } })
+    );
+  });
+
+  it('renders group headers when selectConfig.grouping is enabled, without a top gap on the first header', () => {
+    const def = fieldDef({
+      options: [
+        { id: 1, label: 'Carrot', category: 'Veg' },
+        { id: 2, label: 'Apple', category: 'Fruit' },
+        { id: 3, label: 'Pea', category: 'Veg' },
+      ],
+      selectConfig: { grouping: true, groupingKey: 'category' },
+    });
+    render(
+      <SelectionChoicesEditor
+        fieldDef={def}
+        appliedFilter={null}
+        onApply={() => {}}
+        fetcher={jest.fn()}
+      />
+    );
+    expect(screen.getByText('Fruit')).toBeInTheDocument();
+    expect(screen.getByText('Veg')).toBeInTheDocument();
+    // Same-group items are rendered contiguously, sorted by group.
+    const items = screen.getAllByText(/Apple|Carrot|Pea|Fruit|Veg/).map((el) => el.textContent);
+    expect(items).toEqual(['Fruit', 'Apple', 'Veg', 'Carrot', 'Pea']);
   });
 
   it('renders pre-selected choices as checked in multi mode from the applied filter', () => {

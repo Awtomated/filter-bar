@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import SelectValueInput from '../../src/components/SelectValueInput';
 
@@ -75,6 +75,58 @@ describe('SelectValueInput', () => {
     expect(await screen.findByText('Bare')).toBeInTheDocument();
   });
 
+  it('ignores a fetch that resolves after the component has unmounted', async () => {
+    let resolvePromise;
+    const fetcher = jest.fn(
+      () =>
+        new Promise((resolve) => {
+          resolvePromise = resolve;
+        })
+    );
+    const { unmount } = render(
+      <SelectValueInput
+        fetcher={fetcher}
+        choicesAPI='/api/choices'
+        label='Value'
+        value={null}
+        onChange={() => {}}
+      />
+    );
+    await userEvent.click(screen.getByLabelText('Value'));
+    expect(fetcher).toHaveBeenCalled();
+    unmount();
+    await act(async () => {
+      resolvePromise({ data: { results: [{ id: 1, name: 'Fetched' }] } });
+      await Promise.resolve();
+    });
+  });
+
+  it('ignores a fetch that rejects after the component has unmounted', async () => {
+    let rejectPromise;
+    const fetcher = jest.fn(
+      () =>
+        new Promise((_, reject) => {
+          rejectPromise = reject;
+        })
+    );
+    const { unmount } = render(
+      <SelectValueInput
+        fetcher={fetcher}
+        choicesAPI='/api/choices'
+        label='Value'
+        value={null}
+        onChange={() => {}}
+      />
+    );
+    await userEvent.click(screen.getByLabelText('Value'));
+    expect(fetcher).toHaveBeenCalled();
+    unmount();
+    await act(async () => {
+      rejectPromise(new Error('too late'));
+      await Promise.resolve();
+    });
+  });
+
   it('falls back to an empty option list when the fetch rejects', async () => {
     const fetcher = jest.fn().mockRejectedValue(new Error('network error'));
     render(
@@ -120,6 +172,49 @@ describe('SelectValueInput', () => {
       />
     );
     expect(screen.getByDisplayValue('US - United States')).toBeInTheDocument();
+  });
+
+  it('uses selectConfig.formatOptionLabel over every built-in label fallback', () => {
+    const choices = [{ id: 1, code: 'US', title: 'United States' }];
+    render(
+      <SelectValueInput
+        fetcher={jest.fn()}
+        choices={choices}
+        label='Value'
+        value={choices[0]}
+        onChange={() => {}}
+        selectConfig={{ formatOptionLabel: (opt) => `custom:${opt.id}` }}
+      />
+    );
+    expect(screen.getByDisplayValue('custom:1')).toBeInTheDocument();
+  });
+
+  it('falls back to a stringified id when an option has no title, name, code, or language', () => {
+    const choices = [{ id: 7 }];
+    render(
+      <SelectValueInput
+        fetcher={jest.fn()}
+        choices={choices}
+        label='Value'
+        value={choices[0]}
+        onChange={() => {}}
+      />
+    );
+    expect(screen.getByDisplayValue('7')).toBeInTheDocument();
+  });
+
+  it('formats a language_code+language option as "code - language"', () => {
+    const choices = [{ id: 1, language_code: 'en', language: 'English' }];
+    render(
+      <SelectValueInput
+        fetcher={jest.fn()}
+        choices={choices}
+        label='Value'
+        value={choices[0]}
+        onChange={() => {}}
+      />
+    );
+    expect(screen.getByDisplayValue('en - English')).toBeInTheDocument();
   });
 
   it('allows picking more than one option when multiple is true, and stays open after a pick', async () => {

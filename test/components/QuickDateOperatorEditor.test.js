@@ -196,6 +196,52 @@ describe('QuickDateOperatorEditor', () => {
     expect(screen.queryByRole('button', { name: 'Apply' })).not.toBeInTheDocument();
   });
 
+  it('seeds the operator from preferredOperatorId when there is no applied filter', () => {
+    render(
+      <QuickDateOperatorEditor
+        fieldDef={dateField({})}
+        appliedFilter={null}
+        preferredOperatorId='startdate__lte'
+        onApply={() => {}}
+        timezone='UTC'
+        dateFormat='MM/DD/YYYY'
+      />
+    );
+    expect(getSelectByLabel('Operator')).toHaveTextContent('On or before');
+  });
+
+  it('does not call onApply when the "Reset" range shortcut clears the value back to empty', async () => {
+    const onApply = jest.fn();
+    render(
+      <QuickDateOperatorEditor
+        fieldDef={dateField({})}
+        appliedFilter={null}
+        onApply={onApply}
+        timezone='UTC'
+        dateFormat='MM/DD/YYYY'
+      />
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'This Week' }));
+    expect(onApply).toHaveBeenCalledTimes(1);
+    await userEvent.click(screen.getByRole('button', { name: 'Reset' }));
+    expect(onApply).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders with an empty operator list when fieldDef.operators is not provided', async () => {
+    const { operators, ...fieldDefWithoutOperators } = dateField({});
+    render(
+      <QuickDateOperatorEditor
+        fieldDef={fieldDefWithoutOperators}
+        appliedFilter={null}
+        onApply={() => {}}
+        timezone='UTC'
+        dateFormat='MM/DD/YYYY'
+      />
+    );
+    await userEvent.click(getSelectByLabel('Operator'));
+    expect(screen.queryAllByRole('option')).toHaveLength(0);
+  });
+
   it('seeds the operator and shows shortcuts for an already-applied filter', async () => {
     const appliedFilter = {
       id: 'f1',

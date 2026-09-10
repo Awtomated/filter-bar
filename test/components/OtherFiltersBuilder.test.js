@@ -1,6 +1,15 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import OtherFiltersBuilder from '../../src/components/OtherFiltersBuilder';
+
+// FilterRow's Select components don't wire an explicit htmlFor/id between
+// their InputLabel and combobox, so getByLabelText can't resolve them —
+// locate the combobox via the FormControl that wraps the matching label text.
+function getSelectByLabel(text) {
+  const label = screen.getAllByText(text).find((el) => el.tagName === 'LABEL');
+  const formControl = label.closest('.MuiFormControl-root');
+  return within(formControl).getByRole('combobox');
+}
 
 function op(overrides) {
   return {
@@ -151,6 +160,82 @@ describe('OtherFiltersBuilder', () => {
     expect(onApply).toHaveBeenCalledWith([
       expect.objectContaining({ field: 'name', operatorId: 'name__icontains', value: 'acme' }),
     ]);
+  });
+
+  it('only resets the row that was edited, leaving other draft rows untouched', async () => {
+    const nameField = field({});
+    const statusField = field({
+      name: 'status',
+      label: 'Status',
+      operators: [op({ query_param: 'status' })],
+    });
+    const applied = [
+      { id: 'f1', field: 'name', operatorId: 'name__icontains', value: 'acme' },
+      { id: 'f2', field: 'status', operatorId: 'status', value: 'open' },
+    ];
+    render(
+      <OtherFiltersBuilder
+        otherFieldDefs={[nameField, statusField]}
+        appliedOtherFilters={applied}
+        onApply={() => {}}
+        onCancel={() => {}}
+        fetcher={jest.fn()}
+      />
+    );
+    const values = screen.getAllByLabelText('Value');
+    expect(values[0]).toHaveValue('acme');
+    await userEvent.type(values[0], ' updated');
+    expect(screen.getAllByLabelText('Value')[1]).toHaveValue('open');
+  });
+
+  it('resets the value (but keeps the newly chosen operator) when the operator selection changes', async () => {
+    const multiOpField = field({
+      operators: [
+        op({ label: 'Contains', query_param: 'name__icontains', value: 'icontains' }),
+        op({ label: 'Equals', query_param: 'name__exact', value: 'exact' }),
+      ],
+    });
+    const applied = [{ id: 'f1', field: 'name', operatorId: 'name__icontains', value: 'acme' }];
+    render(
+      <OtherFiltersBuilder
+        otherFieldDefs={[multiOpField]}
+        appliedOtherFilters={applied}
+        onApply={() => {}}
+        onCancel={() => {}}
+        fetcher={jest.fn()}
+      />
+    );
+    expect(screen.getByLabelText('Value')).toHaveValue('acme');
+    await userEvent.click(getSelectByLabel('Operator'));
+    await userEvent.click(screen.getByRole('option', { name: 'Equals' }));
+    expect(getSelectByLabel('Operator')).toHaveTextContent('Equals');
+    expect(screen.getByLabelText('Value')).toHaveValue('');
+  });
+
+  it("resets the operator and value when a draft row's field selection changes", async () => {
+    const nameField = field({});
+    const statusField = field({
+      name: 'status',
+      label: 'Status',
+      operators: [
+        op({ label: 'Is', value: 'exact', query_param: 'status', input_field: 'select' }),
+      ],
+    });
+    const applied = [{ id: 'f1', field: 'name', operatorId: 'name__icontains', value: 'acme' }];
+    render(
+      <OtherFiltersBuilder
+        otherFieldDefs={[nameField, statusField]}
+        appliedOtherFilters={applied}
+        onApply={() => {}}
+        onCancel={() => {}}
+        fetcher={jest.fn()}
+      />
+    );
+    expect(screen.getByLabelText('Value')).toHaveValue('acme');
+    await userEvent.click(getSelectByLabel('Field'));
+    await userEvent.click(screen.getByRole('option', { name: 'Status' }));
+    expect(getSelectByLabel('Operator')).toHaveTextContent('Is');
+    expect(screen.queryByLabelText('Value')).not.toHaveValue('acme');
   });
 
   it('calls onCancel when Cancel is clicked', async () => {
