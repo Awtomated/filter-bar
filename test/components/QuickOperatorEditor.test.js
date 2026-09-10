@@ -186,6 +186,48 @@ describe('QuickOperatorEditor', () => {
     expect(onApply).not.toHaveBeenCalled();
   });
 
+  it('does not apply when a select value is cleared back to null', async () => {
+    const onApply = jest.fn();
+    const fieldDef = field({
+      options: [{ id: 1, label: 'Open' }],
+      operators: [
+        op({
+          label: 'Is',
+          query_param: 'name',
+          value: 'exact',
+          input_field: 'select',
+        }),
+      ],
+    });
+    render(
+      <QuickOperatorEditor
+        fieldDef={fieldDef}
+        appliedFilter={null}
+        onApply={onApply}
+        fetcher={jest.fn()}
+      />
+    );
+    await userEvent.click(screen.getByLabelText('Value'));
+    await userEvent.click(await screen.findByText('Open'));
+    expect(onApply).toHaveBeenCalledTimes(1);
+    await userEvent.click(screen.getByLabelText('Clear'));
+    expect(onApply).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders with an empty operator list when fieldDef.operators is not provided', async () => {
+    const fieldDef = { name: 'name', label: 'Name' };
+    render(
+      <QuickOperatorEditor
+        fieldDef={fieldDef}
+        appliedFilter={null}
+        onApply={() => {}}
+        fetcher={jest.fn()}
+      />
+    );
+    await userEvent.click(getSelectByLabel('Operator'));
+    expect(screen.queryAllByRole('option')).toHaveLength(0);
+  });
+
   it('preserves the applied filter id when re-committing an edited filter', async () => {
     const onApply = jest.fn();
     const fieldDef = field({});

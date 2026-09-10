@@ -40,6 +40,16 @@ describe('QuickFilterChip', () => {
     expect(screen.queryByRole('button', { name: 'Clear filter' })).not.toBeInTheDocument();
   });
 
+  it('does not render a clear control when count > 0 but onClear is not a function', () => {
+    render(
+      <QuickFilterChip label='Status' count={1}>
+        {() => <div>content</div>}
+      </QuickFilterChip>
+    );
+    expect(screen.queryByRole('button', { name: 'Clear filter' })).not.toBeInTheDocument();
+    expect(screen.getByText('Status (1)')).toBeInTheDocument();
+  });
+
   it('opens a popover rendering the children render-prop content on click', async () => {
     render(
       <QuickFilterChip label='Status'>
@@ -91,6 +101,42 @@ describe('QuickFilterChip', () => {
       clearControl.dispatchEvent(enterEvent);
     });
     expect(onClear).toHaveBeenCalledTimes(1);
+  });
+
+  it('calls onClear on a Space keydown on the clear control too', () => {
+    const onClear = jest.fn();
+    render(
+      <QuickFilterChip label='Status' count={1} onClear={onClear}>
+        {() => <div>Inner content</div>}
+      </QuickFilterChip>
+    );
+    const clearControl = screen.getByRole('button', { name: 'Clear filter' });
+    act(() => {
+      clearControl.focus();
+    });
+    const spaceEvent = new KeyboardEvent('keydown', { key: ' ', bubbles: true });
+    act(() => {
+      clearControl.dispatchEvent(spaceEvent);
+    });
+    expect(onClear).toHaveBeenCalledTimes(1);
+  });
+
+  it('ignores any other keydown on the clear control', () => {
+    const onClear = jest.fn();
+    render(
+      <QuickFilterChip label='Status' count={1} onClear={onClear}>
+        {() => <div>Inner content</div>}
+      </QuickFilterChip>
+    );
+    const clearControl = screen.getByRole('button', { name: 'Clear filter' });
+    act(() => {
+      clearControl.focus();
+    });
+    const tabEvent = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true });
+    act(() => {
+      clearControl.dispatchEvent(tabEvent);
+    });
+    expect(onClear).not.toHaveBeenCalled();
   });
 
   it('bumps openKey on every open so consumers can force a fresh mount', async () => {
