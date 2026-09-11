@@ -13,8 +13,6 @@ steps:
     commands:
       - apk add --no-cache git
       - yarn install --frozen-lockfile
-      - git remote set-url origin
-        "https://x-access-token:${GH_TOKEN}@github.com/Awtomated/filter-bar.git"
       - git config user.name "release-bot"
       - git config user.email "ci@awtomated.com"
       - yarn release
