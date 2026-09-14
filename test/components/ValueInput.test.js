@@ -130,7 +130,7 @@ describe('ValueInput', () => {
     expect(screen.getByRole('gridcell', { name: '15', selected: true })).toBeInTheDocument();
   });
 
-  it('calls onChange and onCommit with a UTC-midnight ISO string when the user picks a day', async () => {
+  it('calls onChange and onCommit with a tz-anchored ISO string when the user picks a day', async () => {
     const onChange = jest.fn();
     const onCommit = jest.fn();
     render(
@@ -145,8 +145,8 @@ describe('ValueInput', () => {
       />
     );
     await userEvent.click(screen.getByRole('gridcell', { name: '15' }));
-    expect(onChange).toHaveBeenLastCalledWith('2024-03-15T00:00:00.000Z');
-    expect(onCommit).toHaveBeenLastCalledWith('2024-03-15T00:00:00.000Z');
+    expect(onChange).toHaveBeenLastCalledWith('2024-03-15T00:00:00+00:00');
+    expect(onCommit).toHaveBeenLastCalledWith('2024-03-15T00:00:00+00:00');
   });
 
   it('still commits the correct date against a real controlled value that re-renders on every callback', async () => {
@@ -162,7 +162,7 @@ describe('ValueInput', () => {
       />
     );
     await userEvent.click(screen.getByRole('gridcell', { name: '15' }));
-    expect(onCommit).toHaveBeenLastCalledWith('2024-03-15T00:00:00.000Z');
+    expect(onCommit).toHaveBeenLastCalledWith('2024-03-15T00:00:00+00:00');
   });
 
   it("shows the operator's gte/lte shortcuts above the calendar", () => {

@@ -188,7 +188,7 @@ describe('DynamicFilterBar', () => {
     expect(screen.getByRole('button', { name: 'Tomorrow' })).toBeInTheDocument();
   });
 
-  it('applies the correct UTC-midnight ISO value when a calendar shortcut is picked', async () => {
+  it('applies the correct tz-anchored ISO value when a calendar shortcut is picked', async () => {
     const fetcher = jest.fn().mockResolvedValue({
       data: makeConfig({
         filters: {
@@ -223,7 +223,7 @@ describe('DynamicFilterBar', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Today' }));
 
     expect(onApply).toHaveBeenLastCalledWith({
-      startdate__gte: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T00:00:00\.000Z$/),
+      startdate__gte: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T00:00:00\+00:00$/),
     });
   });
 
