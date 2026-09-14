@@ -15,4 +15,5 @@ steps:
       - yarn install --frozen-lockfile
       - git config user.name "release-bot"
       - git config user.email "ci@awtomated.com"
+      - echo "//npm.awtomated.com/:_authToken=${NPM_TOKEN}" >> .npmrc
       - yarn release

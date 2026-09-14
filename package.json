@@ -19,6 +19,10 @@
     "type": "git",
     "url": "https://github.com/Awtomated/filter-bar.git"
   },
+  "publishConfig": {
+    "registry": "https://npm.awtomated.com/",
+    "access": "restricted"
+  },
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
