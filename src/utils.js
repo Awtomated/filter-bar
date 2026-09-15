@@ -7,9 +7,10 @@ import timezonePlugin from 'dayjs/plugin/timezone.js';
 dayjs.extend(utc);
 dayjs.extend(timezonePlugin);
 
-export function calendarDayToIso(day) {
+export function calendarDayToIso(day, timezone) {
   if (!day || !dayjs.isDayjs(day) || !day.isValid()) return null;
-  return dayjs.utc(day.format('YYYY-MM-DD')).toISOString();
+  const zoned = timezone ? day.tz(timezone).format() : day;
+  return zoned;
 }
 
 export function isoToCalendarDay(iso, timezone) {

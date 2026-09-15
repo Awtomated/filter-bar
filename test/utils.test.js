@@ -46,17 +46,24 @@ function field(overrides) {
 }
 
 describe('calendarDayToIso / isoToCalendarDay', () => {
-  it('serializes a dayjs day as UTC-midnight ISO and parses it back to the same calendar day', () => {
+  it('serializes a dayjs day into a timezone-anchored ISO offset string and parses it back to the same calendar day', () => {
     const day = dayjs.tz('2024-03-15', 'America/New_York');
-    const iso = calendarDayToIso(day);
-    expect(iso).toBe('2024-03-15T00:00:00.000Z');
+    const iso = calendarDayToIso(day, 'America/New_York');
+    expect(iso).toBe('2024-03-15T00:00:00-04:00');
     const roundTripped = isoToCalendarDay(iso, 'America/New_York');
     expect(roundTripped.format('YYYY-MM-DD')).toBe('2024-03-15');
+  });
+
+  it('returns the day unchanged (not a string) when no timezone is given', () => {
+    const day = dayjs.tz('2024-03-15', 'America/New_York');
+    expect(calendarDayToIso(day)).toBe(day);
   });
 
   it('returns null for a nullish/invalid day or iso string', () => {
     expect(calendarDayToIso(null)).toBeNull();
     expect(calendarDayToIso(dayjs('not-a-date'))).toBeNull();
+    expect(calendarDayToIso(null, 'America/New_York')).toBeNull();
+    expect(calendarDayToIso(dayjs('not-a-date'), 'America/New_York')).toBeNull();
     expect(isoToCalendarDay(null, 'UTC')).toBeNull();
     expect(isoToCalendarDay('not-a-date', 'UTC')).toBeNull();
   });

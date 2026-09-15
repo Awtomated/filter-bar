@@ -59,7 +59,10 @@ function RangeCalendar({ selectedOp, value, onChange, timezone, dateFormat }) {
     setDraft(range);
     const [newStart, newEnd] = range ?? [];
     if (newStart && newEnd) {
-      onChange({ start: calendarDayToIso(newStart), end: calendarDayToIso(newEnd) });
+      onChange({
+        start: calendarDayToIso(newStart, timezone),
+        end: calendarDayToIso(newEnd, timezone),
+      });
     }
   }
 
@@ -112,7 +115,7 @@ function DateRangePicker({ selectedOp, value, onChange, timezone, dateFormat }) 
         value={isoToCalendarDay(value, timezone)}
         timezone={timezone}
         format={dateFormat}
-        onChange={(date) => onChange(calendarDayToIso(date))}
+        onChange={(date) => onChange(calendarDayToIso(date, timezone))}
         slotProps={{
           shortcuts: { items: shortcuts, changeImportance: 'accept' },
           actionBar: { actions: [] },

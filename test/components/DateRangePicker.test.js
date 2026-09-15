@@ -18,6 +18,22 @@ const gteOp = {
   input_field: 'date',
 };
 
+const lteOp = {
+  label: 'On or before',
+  value: 'lte',
+  query_param: 'startdate__lte',
+  input_type: 'single',
+  input_field: 'date',
+};
+
+const exactOp = {
+  label: 'Equals',
+  value: 'exact',
+  query_param: 'startdate',
+  input_type: 'single',
+  input_field: 'date',
+};
+
 describe('DateRangePicker', () => {
   it('accepts an array-shaped [start, end] value (not just a {start, end} object)', () => {
     render(
@@ -60,5 +76,68 @@ describe('DateRangePicker', () => {
     );
     expect(screen.getByRole('button', { name: 'Today' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Tomorrow' })).toBeInTheDocument();
+  });
+
+  it('shows "Today"/"Yesterday" shortcuts for the "lte" operator', () => {
+    render(
+      <DateRangePicker
+        selectedOp={lteOp}
+        value={null}
+        onChange={() => {}}
+        timezone='UTC'
+        dateFormat='MM/DD/YYYY'
+      />
+    );
+    expect(screen.getByRole('button', { name: 'Today' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Yesterday' })).toBeInTheDocument();
+  });
+
+  it('shows no shortcuts for an operator that is neither "gte" nor "lte"', () => {
+    render(
+      <DateRangePicker
+        selectedOp={exactOp}
+        value={null}
+        onChange={() => {}}
+        timezone='UTC'
+        dateFormat='MM/DD/YYYY'
+      />
+    );
+    expect(screen.queryByRole('button', { name: 'Today' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Yesterday' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Tomorrow' })).not.toBeInTheDocument();
+  });
+
+  it('calls onChange with the tz-anchored calendar day when a single date is picked', async () => {
+    const onChange = jest.fn();
+    render(
+      <DateRangePicker
+        selectedOp={gteOp}
+        value='2024-03-05T00:00:00.000Z'
+        onChange={onChange}
+        timezone='America/New_York'
+        dateFormat='MM/DD/YYYY'
+      />
+    );
+    await userEvent.click(screen.getByRole('gridcell', { name: '10' }));
+    expect(onChange).toHaveBeenCalledWith('2024-03-10T00:00:00-05:00');
+  });
+
+  it('calls onChange with tz-anchored start/end once a full range is picked', async () => {
+    const onChange = jest.fn();
+    render(
+      <DateRangePicker
+        selectedOp={rangeOp}
+        value={{ start: '2024-03-05T00:00:00.000Z', end: '2024-03-06T00:00:00.000Z' }}
+        onChange={onChange}
+        timezone='America/New_York'
+        dateFormat='MM/DD/YYYY'
+      />
+    );
+    await userEvent.click(screen.getByRole('gridcell', { name: '10' }));
+    await userEvent.click(screen.getByRole('gridcell', { name: '15' }));
+    expect(onChange).toHaveBeenCalledWith({
+      start: '2024-03-10T00:00:00-05:00',
+      end: '2024-03-15T00:00:00-04:00',
+    });
   });
 });
