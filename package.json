@@ -1,6 +1,6 @@
 {
   "name": "@awtomated/filter-bar",
-  "version": "1.0.0",
+  "version": "1.0.0-develop.1",
   "description": "A schema-driven, fully customizable React filter bar (DynamicFilterBar) and filter-toggle button for MUI applications.",
   "license": "UNLICENSED",
   "main": "dist/index.js",
