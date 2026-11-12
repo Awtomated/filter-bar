@@ -1,0 +1,338 @@
+/**
+ * ============================================================================
+ * AWTOMATED DESIGN TOKENS
+ * ============================================================================
+ *
+ * The source of truth for colours, font families and type roles. Tailwind,
+ * shadcn components and MUI all read this file (SHADCN_THEME_PLAN.md).
+ *
+ * Source: Figma "Design-system" (file wGmFJXo1qS92ycQaeiM5uj), pages
+ * "Colour" (Primitives 4026:13, Semantic tokens 4027:2, Review 4028:2) and
+ * "Typography" (4020:18), as of 2026-11-03.
+ *
+ * CONTENTS
+ *   :root   Light theme (the default)
+ *     1. Primitives         --awt-<hue>-<step>   raw palette, NOT for components
+ *     2. Semantic colours   --primary, --border  what components use
+ *     3. Font families      --font-family-*
+ *     4. Type roles         --type-<role>-*      desktop, then mobile values
+ *   .dark   Dark theme: overrides of section 2 only
+ *   @media  Mobile: swaps in the section 4 mobile values below 600px
+ *
+ * HOW EACH SECTION IS USED
+ *   Primitives        only to define semantic tokens (no Tailwind classes:
+ *                     `bg-purple-500` would clash with the legacy palette)
+ *   Semantic colours  Tailwind `bg-primary`, `text-muted-foreground`, ...;
+ *                     MUI theme.palette (adapters/mui/palette.js)
+ *   Type roles        Tailwind `text-body-m`, `text-title-l`, ...;
+ *                     MUI Typography variants (adapters/mui/typography.js)
+ *
+ * RULES
+ *   - Colours as hex: MUI's colour maths can't read oklch().
+ *   - Semantic tokens point at primitives (var(--awt-...)), as in Figma.
+ *     Don't put a new hex in a semantic token; add a primitive first.
+ *   - After any change run `yarn theme:sync` (MUI reads the generated
+ *     tokens.generated.js; CI runs `yarn theme:check`).
+ *   - Imported into the `theme` cascade layer by styles/theme.css. A new
+ *     semantic colour also needs a `--color-<name>` line there to get a class.
+ *   - Keep the flat `--name: value;` shape: theme/parseTokens.js reads it.
+ */
+
+:root {
+  /* ==========================================================================
+     1. PRIMITIVES (Figma: Colour · Primitives)
+     The raw palette. Only referenced by section 2, never by components.
+     ========================================================================== */
+
+  /* --- Purple (brand). 800 is the primary. --- */
+  --awt-purple-50: #f6f2fc;
+  --awt-purple-100: #ede5f9;
+  --awt-purple-200: #dccbf3;
+  --awt-purple-300: #c3a6ea;
+  --awt-purple-400: #a277dd;
+  --awt-purple-500: #8049cc;
+  --awt-purple-600: #6626b6;
+  --awt-purple-700: #5418a3;
+  --awt-purple-800: #460d91;
+  --awt-purple-900: #2f066f;
+  --awt-purple-950: #1d0447;
+
+  /* --- Neutral. 0 white; 50–200 plain grey; 300–950 slightly purple-tinted. --- */
+  --awt-neutral-0: #ffffff;
+  --awt-neutral-50: #f8f8f9;
+  --awt-neutral-100: #f2f2f4;
+  --awt-neutral-200: #e6e6e9;
+  --awt-neutral-300: #d6d2df;
+  --awt-neutral-400: #aba6b8;
+  --awt-neutral-500: #8a8597;
+  --awt-neutral-600: #6a6577;
+  --awt-neutral-700: #4a4557;
+  --awt-neutral-800: #322e3d;
+  --awt-neutral-900: #1c1a22;
+  --awt-neutral-950: #121016;
+
+  /* --- Status hues: Tailwind's palette, only the steps in use. --- */
+  /* Green (success) */
+  --awt-green-50: #f0fdf4;
+  --awt-green-100: #dcfce7;
+  --awt-green-600: #16a34a;
+  --awt-green-700: #15803d;
+  --awt-green-800: #166534;
+  /* Amber (warning) */
+  --awt-amber-50: #fffbeb;
+  --awt-amber-100: #fef3c7;
+  --awt-amber-600: #d97706;
+  --awt-amber-700: #b45309;
+  --awt-amber-800: #92400e;
+  /* Blue (info) */
+  --awt-blue-50: #eff6ff;
+  --awt-blue-100: #dbeafe;
+  --awt-blue-600: #2563eb;
+  --awt-blue-700: #1d4ed8;
+  --awt-blue-800: #1e40af;
+  /* Red (destructive) */
+  --awt-red-50: #fef2f2;
+  --awt-red-100: #fee2e2;
+  --awt-red-600: #dc2626;
+  --awt-red-700: #b91c1c;
+  --awt-red-800: #991b1b;
+
+  /* ==========================================================================
+     2. SEMANTIC COLOURS (Figma: Colour · Semantic tokens)
+     What components use. shadcn's names; each `X` pairs with `X-foreground`
+     (the text/icon colour on it). Tailwind: bg-X, text-X, border-X, ring-X.
+     ========================================================================== */
+
+  /* --- Base: page, cards, popovers and menus --- */
+  --background: var(--awt-neutral-0);
+  --foreground: var(--awt-neutral-900);
+  --card: var(--awt-neutral-0);
+  --card-foreground: var(--awt-neutral-900);
+  --popover: var(--awt-neutral-0);
+  --popover-foreground: var(--awt-neutral-900);
+
+  /* --- Action: buttons, links, selected and hover states --- */
+  --primary: var(--awt-purple-800);
+  --primary-foreground: var(--awt-neutral-0);
+  --secondary: var(--awt-neutral-100);
+  --secondary-foreground: var(--awt-neutral-900);
+  --accent: var(--awt-purple-50);
+  --accent-foreground: var(--awt-neutral-900);
+  --destructive: var(--awt-red-600);
+  /* Not in Figma (shadcn v4 uses white text on destructive). Kept because
+     MUI's error.contrastText and existing classes need it. */
+  --destructive-foreground: var(--awt-neutral-0);
+
+  /* --- Quiet: subdued surfaces and secondary text --- */
+  --muted: var(--awt-neutral-100);
+  --muted-foreground: var(--awt-neutral-600);
+
+  /* --- Lines and focus --- */
+  --border: var(--awt-neutral-200);
+  --input: var(--awt-neutral-300);
+  --ring: var(--awt-purple-500);
+
+  /* --- Status (Awtomated additions) --- */
+  /* Solid: icons, accents, solid badges. */
+  --success: var(--awt-green-700);
+  --warning: var(--awt-amber-700);
+  --info: var(--awt-blue-600);
+  /* Not in Figma. White passes AA on each solid (5.0, 5.0, 5.2); MUI's
+     contrastText and existing classes need them. */
+  --success-foreground: var(--awt-neutral-0);
+  --warning-foreground: var(--awt-neutral-0);
+  --info-foreground: var(--awt-neutral-0);
+  /* Subtle: soft chip fills with dark text. */
+  --success-subtle: var(--awt-green-100);
+  --success-subtle-foreground: var(--awt-green-800);
+  --warning-subtle: var(--awt-amber-100);
+  --warning-subtle-foreground: var(--awt-amber-800);
+  --info-subtle: var(--awt-blue-100);
+  --info-subtle-foreground: var(--awt-blue-700);
+  --destructive-subtle: var(--awt-red-100);
+  --destructive-subtle-foreground: var(--awt-red-700);
+  --primary-subtle: var(--awt-purple-50);
+  --primary-subtle-foreground: var(--awt-purple-800);
+
+  /* --- Charts: series colours, in order --- */
+  --chart-1: var(--awt-purple-800);
+  --chart-2: var(--awt-blue-600);
+  --chart-3: var(--awt-green-600);
+  --chart-4: var(--awt-amber-600);
+  --chart-5: var(--awt-neutral-500);
+
+  /* --- Sidebar: the navbar (MUI's awtomatedDark theme) --- */
+  --sidebar: var(--awt-neutral-50);
+  --sidebar-foreground: var(--awt-neutral-900);
+  --sidebar-primary: var(--awt-purple-800);
+  --sidebar-primary-foreground: var(--awt-neutral-0);
+  --sidebar-accent: var(--awt-purple-50);
+  --sidebar-accent-foreground: var(--awt-neutral-900);
+  --sidebar-border: var(--awt-neutral-200);
+  --sidebar-ring: var(--awt-purple-500);
+
+  /* ==========================================================================
+     3. FONT FAMILIES (Figma: Typography · Family)
+     Two families, no mono. Display is used by Display L, Display M, Title L.
+     Tailwind: font-sans, font-display.
+     ========================================================================== */
+
+  --font-family-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-family-display: 'Inter Display', 'Inter', ui-sans-serif, system-ui, sans-serif;
+
+  /* ==========================================================================
+     4. TYPE ROLES (Figma: Typography · Type scale)
+     Four values per role: size and line height in rem (1rem = 16px), letter
+     spacing in em (−1.5% = −0.015em), weight 400 / 500 / 600.
+     Tailwind: one class per role, e.g. text-title-l (styles/theme.css).
+     MUI: Typography variants (adapters/mui/typography.js).
+     ========================================================================== */
+
+  /* --- Display L: 40 / 44, semibold --- */
+  --type-display-l-size: 2.5rem;
+  --type-display-l-line-height: 2.75rem;
+  --type-display-l-letter-spacing: -0.015em;
+  --type-display-l-weight: 600;
+
+  /* --- Display M: 32 / 36, semibold --- */
+  --type-display-m-size: 2rem;
+  --type-display-m-line-height: 2.25rem;
+  --type-display-m-letter-spacing: -0.015em;
+  --type-display-m-weight: 600;
+
+  /* --- Title L: 24 / 32, semibold --- */
+  --type-title-l-size: 1.5rem;
+  --type-title-l-line-height: 2rem;
+  --type-title-l-letter-spacing: -0.015em;
+  --type-title-l-weight: 600;
+
+  /* --- Title M: 20 / 28, semibold --- */
+  --type-title-m-size: 1.25rem;
+  --type-title-m-line-height: 1.75rem;
+  --type-title-m-letter-spacing: -0.015em;
+  --type-title-m-weight: 600;
+
+  /* --- Title S: 16 / 24, semibold --- */
+  --type-title-s-size: 1rem;
+  --type-title-s-line-height: 1.5rem;
+  --type-title-s-letter-spacing: -0.015em;
+  --type-title-s-weight: 600;
+
+  /* --- Body L: 16 / 24, regular --- */
+  --type-body-l-size: 1rem;
+  --type-body-l-line-height: 1.5rem;
+  --type-body-l-letter-spacing: 0em;
+  --type-body-l-weight: 400;
+
+  /* --- Body M: 14 / 20, regular --- */
+  --type-body-m-size: 0.875rem;
+  --type-body-m-line-height: 1.25rem;
+  --type-body-m-letter-spacing: 0em;
+  --type-body-m-weight: 400;
+
+  /* --- Body S: 13 / 18, regular --- */
+  --type-body-s-size: 0.8125rem;
+  --type-body-s-line-height: 1.125rem;
+  --type-body-s-letter-spacing: 0em;
+  --type-body-s-weight: 400;
+
+  /* --- Label M: 14 / 20, medium --- */
+  --type-label-m-size: 0.875rem;
+  --type-label-m-line-height: 1.25rem;
+  --type-label-m-letter-spacing: 0em;
+  --type-label-m-weight: 500;
+
+  /* --- Label S: 12 / 16, medium --- */
+  --type-label-s-size: 0.75rem;
+  --type-label-s-line-height: 1rem;
+  --type-label-s-letter-spacing: 0em;
+  --type-label-s-weight: 500;
+
+  /* --- Label XS: 11 / 14, semibold --- */
+  --type-label-xs-size: 0.6875rem;
+  --type-label-xs-line-height: 0.875rem;
+  --type-label-xs-letter-spacing: 0em;
+  --type-label-xs-weight: 600;
+
+  /* --- Caption: 12 / 16, regular --- */
+  --type-caption-size: 0.75rem;
+  --type-caption-line-height: 1rem;
+  --type-caption-letter-spacing: 0em;
+  --type-caption-weight: 400;
+
+  /* --- Mobile values (Figma: Mobile mode) ---
+     Only these roles change on mobile. Applied below the `sm` breakpoint
+     (600px) by the @media block at the end of this file. */
+  --type-display-l-size-mobile: 2rem;
+  --type-display-l-line-height-mobile: 2.25rem;
+  --type-display-m-size-mobile: 1.75rem;
+  --type-display-m-line-height-mobile: 2rem;
+  --type-title-l-size-mobile: 1.25rem;
+  --type-title-l-line-height-mobile: 1.75rem;
+}
+
+/* ============================================================================
+   DARK THEME (Figma's first draft)
+   Applies under a `.dark` class. Overrides section 2 only; primitives, fonts
+   and type roles are shared. Not listed here = same as light: the status
+   tokens have no dark values yet ("Later" in Figma).
+   ============================================================================ */
+.dark {
+  /* --- Base --- */
+  --background: var(--awt-neutral-950);
+  --foreground: var(--awt-neutral-50);
+  --card: var(--awt-neutral-900);
+  --card-foreground: var(--awt-neutral-50);
+  --popover: var(--awt-neutral-900);
+  --popover-foreground: var(--awt-neutral-50);
+
+  /* --- Action --- */
+  --primary: var(--awt-purple-400);
+  --primary-foreground: var(--awt-purple-950);
+  --secondary: var(--awt-neutral-800);
+  --secondary-foreground: var(--awt-neutral-50);
+  --accent: var(--awt-neutral-800);
+  --accent-foreground: var(--awt-neutral-50);
+  --destructive: var(--awt-red-600);
+
+  /* --- Quiet --- */
+  --muted: var(--awt-neutral-800);
+  --muted-foreground: var(--awt-neutral-400);
+
+  /* --- Lines and focus --- */
+  --border: var(--awt-neutral-800);
+  --input: var(--awt-neutral-700);
+  --ring: var(--awt-purple-400);
+
+  /* --- Charts --- */
+  --chart-1: var(--awt-purple-400);
+  --chart-2: var(--awt-blue-600);
+  --chart-3: var(--awt-green-600);
+  --chart-4: var(--awt-amber-600);
+  --chart-5: var(--awt-neutral-500);
+
+  /* --- Sidebar --- */
+  --sidebar: var(--awt-neutral-950);
+  --sidebar-foreground: var(--awt-neutral-50);
+  --sidebar-primary: var(--awt-purple-400);
+  --sidebar-primary-foreground: var(--awt-purple-950);
+  --sidebar-accent: var(--awt-neutral-800);
+  --sidebar-accent-foreground: var(--awt-neutral-50);
+  --sidebar-border: var(--awt-neutral-800);
+  --sidebar-ring: var(--awt-purple-400);
+}
+
+/* ============================================================================
+   MOBILE (below 600px)
+   Swaps the type-role values for their -mobile versions (section 4).
+   ============================================================================ */
+@media (width < 600px) {
+  :root {
+    --type-display-l-size: var(--type-display-l-size-mobile);
+    --type-display-l-line-height: var(--type-display-l-line-height-mobile);
+    --type-display-m-size: var(--type-display-m-size-mobile);
+    --type-display-m-line-height: var(--type-display-m-line-height-mobile);
+    --type-title-l-size: var(--type-title-l-size-mobile);
+    --type-title-l-line-height: var(--type-title-l-line-height-mobile);
+  }
+}

@@ -8,7 +8,9 @@ import { LocalizationProvider as ProLocalizationProvider } from '@mui/x-date-pic
 import { AdapterDayjs as ProAdapterDayjs } from '@mui/x-date-pickers-pro/AdapterDayjs';
 import { calendarDayToIso, isoToCalendarDay } from '../utils';
 
-function gteShortcuts(timezone) {
+// The shortcut builders are exported only so the shadcn version's timezone
+// parity tests (test/shadcn/timezoneParity.test.js) can compare against them.
+export function gteShortcuts(timezone) {
   const today = () => dayjs().tz(timezone).startOf('day');
   return [
     { label: 'Today', getValue: () => today() },
@@ -16,7 +18,7 @@ function gteShortcuts(timezone) {
   ];
 }
 
-function lteShortcuts(timezone) {
+export function lteShortcuts(timezone) {
   const today = () => dayjs().tz(timezone).startOf('day');
   return [
     { label: 'Today', getValue: () => today() },
@@ -25,7 +27,7 @@ function lteShortcuts(timezone) {
 }
 
 // MUI X's own documented default shortcut set for a range picker/calendar.
-function rangeShortcuts(timezone) {
+export function rangeShortcuts(timezone) {
   const today = () => dayjs().tz(timezone).startOf('day');
   return [
     { label: 'This Week', getValue: () => [today().startOf('week'), today().endOf('week')] },

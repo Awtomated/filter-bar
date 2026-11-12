@@ -1,0 +1,32 @@
+/*
+ * Mirrors main-app's global CSS so the shadcn bar renders here exactly as in
+ * the app (copied from main-app with `yarn ui:sync`):
+ *   public/assets/css-layers.css   layer order + reset (tailwind-base.css)
+ *   src/styles/app-base.css        html/body: Inter, 14px, 143%, 0.17px
+ *   src/styles/app-utilities.css   Tailwind utilities, design-system theme
+ * MUI goes into the `mui` layer (playground/muiLayer.js), as in the app, and
+ * there is no CssBaseline (the app doesn't use one either).
+ */
+@layer properties, theme, base, mui, components, utilities;
+
+@import './theme/tailwind-base.css' layer(base);
+@import './theme/app-base.css';
+
+@import 'tailwindcss/utilities.css' layer(utilities) source(none);
+@source '../src/shadcn';
+@source './';
+
+@import './theme/theme.css';
+@import './theme/app-theme.css';
+
+/*
+ * Playground-only, unlayered: the app's body is `overflow: hidden` (its layout
+ * scrolls inside), and its pages paint their own background.
+ */
+body {
+  overflow: auto;
+}
+
+#root {
+  background: var(--background);
+}
