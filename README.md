@@ -92,8 +92,9 @@ shape:
 - A field renders a **date picker** when the selected operator's `input_field` is `"date"`, or when
   the field's own `type` is `"datetime"` — whichever applies, regardless of the other. Like any
   other field, a date field listed in `most_used_filters` gets its own quick chip and opens the same
-  date picker in its popover on click. Values are serialized as a UTC-midnight ISO string for the
-  field's calendar day, anchored to the `timezone` prop, and the picker's displayed/typed section
+  date picker in its popover on click. Values are serialized as midnight of the picked calendar day
+  in the `timezone` prop, with that day's UTC offset (`2026-11-12T00:00:00+05:30`, `…Z` for UTC;
+  range shortcuts that end a period end at `23:59:59`), and the picker's displayed/typed section
   order comes from the `dateFormat` prop (e.g. `"DD-MM-YYYY"` puts Day first).
 
 ## Props
@@ -195,13 +196,102 @@ would anywhere else in your app.
 build a different UI on top of the same filter-config contract, or reuse `QuickFilterChip` as a
 building block.
 
+## shadcn version (`@awtomated/filter-bar/shadcn`)
+
+A second entry built on Radix, Tailwind v4 and the host app's shadcn design tokens, styled to the
+Figma filter chip row. The MUI version above is unchanged; both share the same data contract
+(`filterApiUrl`, `fetcher`, `onApply` params, `appliedFilters` / `onFiltersChange` shape,
+`choicesMap`, `fieldProps`, `labels`, `timezone`), so a screen can switch between them.
+
+```jsx
+import { DynamicFilterBar, FilterToggleButton } from '@awtomated/filter-bar/shadcn';
+
+<FilterToggleButton active={open} label='Filter' count={activeCount} onClick={toggle} />;
+{
+  open && (
+    <DynamicFilterBar
+      filterApiUrl='/api/crm/contacts/filters/'
+      fetcher={(url) => apiService.get(url)}
+      dateFormat='dd/MM/yyyy' // date-fns pattern
+      onApply={loadContacts}
+    />
+  );
+}
+```
+
+How it behaves:
+
+- **Chips** read `field operator value ×` (Body M). **Dashed = not applied, solid = applied.** A
+  multi-select with one value reads "is", with several "is any of A, B" (no "+N").
+- **Main chips:** the first `maxQuickChips` (default **2**) of `most_used_filters` (then schema
+  order) always show, dashed while empty.
+- **"+ Add filter"** opens a searchable list of the fields not yet shown; picking one adds a dashed
+  chip and opens it. There is no multi-row builder. **"Clear all"** shows once something is applied.
+- **Popovers:** the operator word on a chip opens the operator list; the chip opens its value
+  editor: a searchable choice list with a check on selected entries, a text/number field (no Apply
+  button and no request while typing: it applies on Enter, or on blur if the user forgot to press
+  Enter; clearing it removes the filter), or a calendar with shortcuts (single date or range).
+- Values that arrive as bare ids (e.g. `{ id: 5 }` from URL params) get their labels from the
+  field's choices, fetched once per bar.
+
+Requirements in the host app:
+
+- Peer dependencies (optional for the MUI entry): `radix-ui`, `lucide-react`,
+  `class-variance-authority`, `clsx`, `tailwind-merge`, `date-fns`.
+- **Tailwind v4 with the design-system theme**, and the package in Tailwind's sources, or its
+  classes produce no CSS:
+  ```css
+  @source "../../node_modules/@awtomated/filter-bar/dist";
+  ```
+
+Extra props: `classNames` (`row`, `chip`, `chipApplied`, `chipEmpty`, `chipOperator`, `chipValue`,
+`popover`, `menuItem`, `menuItemSelected`, `groupHeading`, `addFilter`, `clearAll`, merged with
+`cn()`), `className`, `portalContainer` (render popovers inside e.g. an MUI Dialog), and
+`fieldProps[field].icon` (an icon shown in that field's chip). Extra `labels`: `filterBy`,
+`singleValueOperator`, `previousMonth`, `nextMonth`. `tokens` is not used.
+
+The primitives in `src/shadcn/ui/` and `src/shadcn/lib/utils.js` are copies of main-app's
+`src/design-system` files. `yarn ui:sync` (with `MAIN_APP_DIR`) copies the app's theme into the
+playground. See `SHADCN_MIGRATION_PLAN.md`.
+
 ## Development
 
 ```sh
 yarn install
 yarn test        # jest unit tests for the pure helpers
 yarn build       # tsup -> dist/ (esm + cjs)
+yarn playground  # Vite dev server at http://localhost:5173 for manual testing
 ```
+
+### Local playground
+
+`yarn playground` starts a Vite app (in `playground/`) that renders `DynamicFilterBar` straight from
+`src/`, so component edits hot-reload. There is no real backend: a mock `fetcher` serves the filter
+schemas and choice lists, and 40 sample contacts are filtered with whatever params `onApply` emits,
+so you can see whether each filter really narrows the rows.
+
+- **Scenarios** (sidebar): full schema with every field type, `appliedFilters`, `fieldProps`
+  grouping and labels, `choicesMap` overrides, no `most_used_filters` (backfill), small schema, i18n
+  `labels` + `tokens`, a failing choices endpoint, an empty schema, and a failing schema endpoint.
+  Each scenario shows a "What to check" list.
+- **Bar UI** switch: the shadcn version (default) or the MUI version, on the same scenario and mock
+  data, so you can compare their `onApply` params. Two scenarios are mainly for the shadcn version:
+  values from URL params (bare ids) and the bar inside an MUI Dialog.
+- **Same CSS as main-app:** the playground loads the app's reset, `app-base.css` (Inter, 14px body,
+  0.17px letter spacing), design tokens, type roles and Tailwind scales (copied by `yarn ui:sync`),
+  puts MUI in the `mui` cascade layer and uses no `CssBaseline`, as the app does. What renders here
+  is what renders in the app.
+- **Design check** tab: renders the shadcn bar's components and compares their computed styles
+  (font, size, line height, weight, letter spacing, colours, heights, radii, padding) with the Figma
+  spec and the app's tokens, row by row. Toggle dark theme to check the dark tokens.
+- **Controls**: `maxQuickChips`, `dateFormat`, `timezone`, mock network latency, dark theme, and a
+  remount button that resets the bar's state.
+- **Output tabs**: last `onApply` params and query string, matching sample contacts,
+  `onFiltersChange` state, a network log of mock requests, and the `onApply` call history.
+
+Sample data lives in `playground/sampleData.js`, schemas and scenarios in `playground/scenarios.js`.
+To test a new case, add a field to `FIELDS` or a new entry to `scenarios`. In dev, React StrictMode
+runs effects twice, so each fetch appears twice in the network log.
 
 Releases are fully automated via `semantic-release` on push to `master` (stable) and `develop`
 (`next` prerelease) — commit messages must follow

@@ -1,0 +1,267 @@
+/*@tailwind base;*/
+
+/**
+ * Custom base styles
+ *
+ * Split across cascade layers (order declared in public/assets/css-layers.css) so each
+ * rule keeps the result it had when this file was unlayered and loaded after
+ * Emotion: rules MUI used to beat on specificity (element selectors such as
+ * h1–h6, `form label`) are in `base`, below `mui`; rules that used to beat
+ * MUI or vendor classes are in `components`, above `mui`. Both are below the
+ * Tailwind utilities. Not indented, to keep the history readable.
+ */
+
+@layer base {
+  :root {
+    --color-grey-0: #f4f5f7;
+  }
+
+  html {
+    /* 1rem = 16px (browser default). Was 62.5% (10px) before Tailwind v4 Phase 2;
+     MUI's htmlFontSize matches it (FuseDefaultSettings.js). */
+    font-size: 100%;
+    font-family: var(--font-family-sans);
+    background-color: #121212;
+    -webkit-font-smoothing: antialiased;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    font-size: 14px;
+    line-height: 143%;
+    font-weight: 400;
+    letter-spacing: 0.17px;
+    overflow: hidden;
+    top: 0px !important;
+  }
+
+  html,
+  body,
+  #root {
+    position: relative;
+    margin: 0;
+    min-height: 100vh;
+  }
+
+  h1,
+  .h1 {
+    font-size: 24px;
+  }
+
+  h2,
+  .h2 {
+    font-size: 20px;
+  }
+
+  h3,
+  .h3 {
+    font-size: 16px;
+  }
+
+  h4,
+  .h4 {
+    font-size: 15px;
+  }
+
+  h5,
+  .h5 {
+    font-size: 13px;
+  }
+
+  h6,
+  .h6 {
+    font-size: 12px;
+  }
+} /* @layer base */
+
+/* Rules that used to beat MUI (e.g. tooltip z-index): kept above it. */
+@layer components {
+  .ps > .ps__rail-y,
+  .ps > .ps__rail-x {
+    z-index: 99;
+  }
+
+  a[role='button'] {
+    text-decoration: none;
+  }
+
+  [role='tooltip'] {
+    z-index: 9999;
+  }
+
+  /* Medium Devices, Desktops Only */
+  @media only screen and (min-width: 992px) {
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+      background-color: rgba(0, 0, 0, 0);
+    }
+
+    ::-webkit-scrollbar:hover {
+      width: 8px;
+      height: 8px;
+      background-color: rgba(0, 0, 0, 0.06);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      border: 2px solid transparent;
+      border-radius: 20px;
+    }
+
+    ::-webkit-scrollbar-thumb:active {
+      border-radius: 20px;
+    }
+  }
+} /* @layer components */
+
+/* Element-level rules that MUI used to beat on specificity: kept below it. */
+@layer base {
+  form label {
+    z-index: 99;
+  }
+
+  body.no-animate *,
+  body.no-animate *::before,
+  body.no-animate *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+
+  button:focus {
+    outline: none;
+  }
+
+  /* Removes webkit's autofill backgorund color */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  input:-webkit-autofill:active {
+    transitiondelay: 9999s;
+    transitionproperty: background-color, color;
+  }
+
+  :focus {
+    outline-color: transparent;
+  }
+} /* @layer base */
+
+@layer components {
+  /*fullcalendar Fix*/
+  .fc-scrollgrid-section-liquid {
+    height: 1px !important;
+  }
+
+  .avatar-group-wrapper {
+    display: flex;
+    flex-direction: row;
+  }
+  .avatar-group-wrapper > .avatar-group-item {
+    border-radius: 50%;
+    box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000),
+      var(--tw-shadow);
+  }
+  .avatar-group-wrapper > .avatar-group-item:not(:first-child) {
+    margin-left: -0px;
+  }
+
+  .avatar-group-wrapper > .avatar-group-item:hover {
+    z-index: 1000;
+  }
+
+  .profile_card {
+    transform: scale(1);
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    transform-origin: left center;
+    width: 100%;
+  }
+  .profile_card:not(.no-hover):hover {
+    transform: scale(1.05);
+  }
+
+  @media print {
+    .FusePageCarded-header,
+    .FusePageCarded-toolbar {
+      display: none;
+    }
+  }
+  .position-absolute {
+    position: absolute;
+  }
+
+  input:-webkit-autofill,
+  textarea:-webkit-autofill {
+    -webkit-text-fill-color: #000 !important;
+    transition: background-color 5000s ease-in-out 0s;
+  }
+
+  .AttachDocument_dropzone__Budsi:focus {
+    border-color: #68139e !important;
+  }
+
+  .CodeMirror-scroll {
+    overflow: hidden !important;
+    pointer-events: none !important;
+  }
+
+  .CodeMirror-vscrollbar,
+  .editor .CodeMirror-hscrollbar {
+    display: none !important;
+    overflow-y: hidden;
+  }
+
+  .notranslate {
+    translate: no !important;
+  }
+
+  #goog-gt-tt {
+    display: none !important;
+  }
+
+  .VIpgJd-ZVi9od-aZ2wEe-wOHMyf {
+    bottom: 0 !important;
+    right: 0 !important;
+    top: auto !important;
+    left: auto !important;
+    display: none !important;
+  }
+
+  .VIpgJd-ZVi9od-ORHb-OEVmcd {
+    display: none !important;
+  }
+
+  .awt_grey_divider::before,
+  .awt_grey_divider::after {
+    border-color: var(--color-grey-0);
+  }
+  @keyframes tabFadeSlide {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-tab {
+    animation: tabFadeSlide 0.3s ease-out;
+  }
+
+  input[type='file']::file-selector-button {
+    cursor: pointer;
+  }
+
+  .border-custom-dashed {
+    border-style: dashed;
+    border-width: 1px;
+    border-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org' width='10' height='10'><path d='M0 5L5 5' stroke='#0000001F' stroke-width='4' stroke-dasharray='4, 4'/></svg>")
+      10 repeat;
+  }
+
+  .cell-shadow {
+    box-shadow: inset -1px 0 1px -1px rgba(0, 0, 0, 0.2), inset -2px 0 2px -2px rgba(0, 0, 0, 0.14),
+      inset -3px 0 5px -4px rgba(0, 0, 0, 0.12);
+  }
+} /* @layer components */

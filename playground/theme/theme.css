@@ -1,0 +1,210 @@
+/**
+ * The design system's Tailwind theme. Imported by
+ * src/styles/app-utilities.css, so it is part of the same Tailwind build.
+ * Plan: SHADCN_THEME_PLAN.md.
+ *
+ * Don't run `shadcn init`: it rewrites this file and adds its own colours.
+ * Review the CSS diff after `yarn ui:add`.
+ */
+
+/* Colours and font families, in shadcn's format. */
+@import './tokens.css' layer(theme);
+
+/* Enter/exit animations used by shadcn overlays (`animate-in`, `fade-in-0`). */
+@import 'tw-animate-css';
+
+/*
+ * Class-based dark mode: `.dark` on any element darkens its subtree (Tailwind's
+ * default is the OS setting). Components should use semantic tokens instead of
+ * `dark:` (plan, principle P5).
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Colour utilities from the tokens: `bg-primary`, `text-muted-foreground`,
+ * `bg-success-subtle`, `border-sidebar-border`, ... `inline` makes utilities
+ * reference the runtime variables, so `.dark` and the theme switch work.
+ */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-success-subtle: var(--success-subtle);
+  --color-success-subtle-foreground: var(--success-subtle-foreground);
+  --color-warning-subtle: var(--warning-subtle);
+  --color-warning-subtle-foreground: var(--warning-subtle-foreground);
+  --color-info-subtle: var(--info-subtle);
+  --color-info-subtle-foreground: var(--info-subtle-foreground);
+  --color-destructive-subtle: var(--destructive-subtle);
+  --color-destructive-subtle-foreground: var(--destructive-subtle-foreground);
+  --color-primary-subtle: var(--primary-subtle);
+  --color-primary-subtle-foreground: var(--primary-subtle-foreground);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* `font-display`. `font-sans` is in app-utilities.css (also from the tokens). */
+  --font-display: var(--font-family-display);
+}
+
+/*
+ * Type roles (Figma: Typography · Type scale). One class per role sets the
+ * family, size, line height, letter spacing and weight: `text-title-l`. Values
+ * come from the --type-* tokens (tokens.css), which also switch to the mobile
+ * sizes below 600px. Tailwind's own scale (`text-sm`, ...) stays for shadcn.
+ */
+@theme {
+  --text-display-l: var(--type-display-l-size);
+  --text-display-l--line-height: var(--type-display-l-line-height);
+  --text-display-l--letter-spacing: var(--type-display-l-letter-spacing);
+  --text-display-l--font-weight: var(--type-display-l-weight);
+  --text-display-m: var(--type-display-m-size);
+  --text-display-m--line-height: var(--type-display-m-line-height);
+  --text-display-m--letter-spacing: var(--type-display-m-letter-spacing);
+  --text-display-m--font-weight: var(--type-display-m-weight);
+  --text-title-l: var(--type-title-l-size);
+  --text-title-l--line-height: var(--type-title-l-line-height);
+  --text-title-l--letter-spacing: var(--type-title-l-letter-spacing);
+  --text-title-l--font-weight: var(--type-title-l-weight);
+  --text-title-m: var(--type-title-m-size);
+  --text-title-m--line-height: var(--type-title-m-line-height);
+  --text-title-m--letter-spacing: var(--type-title-m-letter-spacing);
+  --text-title-m--font-weight: var(--type-title-m-weight);
+  --text-title-s: var(--type-title-s-size);
+  --text-title-s--line-height: var(--type-title-s-line-height);
+  --text-title-s--letter-spacing: var(--type-title-s-letter-spacing);
+  --text-title-s--font-weight: var(--type-title-s-weight);
+  --text-body-l: var(--type-body-l-size);
+  --text-body-l--line-height: var(--type-body-l-line-height);
+  --text-body-l--letter-spacing: var(--type-body-l-letter-spacing);
+  --text-body-l--font-weight: var(--type-body-l-weight);
+  --text-body-m: var(--type-body-m-size);
+  --text-body-m--line-height: var(--type-body-m-line-height);
+  --text-body-m--letter-spacing: var(--type-body-m-letter-spacing);
+  --text-body-m--font-weight: var(--type-body-m-weight);
+  --text-body-s: var(--type-body-s-size);
+  --text-body-s--line-height: var(--type-body-s-line-height);
+  --text-body-s--letter-spacing: var(--type-body-s-letter-spacing);
+  --text-body-s--font-weight: var(--type-body-s-weight);
+  --text-label-m: var(--type-label-m-size);
+  --text-label-m--line-height: var(--type-label-m-line-height);
+  --text-label-m--letter-spacing: var(--type-label-m-letter-spacing);
+  --text-label-m--font-weight: var(--type-label-m-weight);
+  --text-label-s: var(--type-label-s-size);
+  --text-label-s--line-height: var(--type-label-s-line-height);
+  --text-label-s--letter-spacing: var(--type-label-s-letter-spacing);
+  --text-label-s--font-weight: var(--type-label-s-weight);
+  --text-label-xs: var(--type-label-xs-size);
+  --text-label-xs--line-height: var(--type-label-xs-line-height);
+  --text-label-xs--letter-spacing: var(--type-label-xs-letter-spacing);
+  --text-label-xs--font-weight: var(--type-label-xs-weight);
+  --text-caption: var(--type-caption-size);
+  --text-caption--line-height: var(--type-caption-line-height);
+  --text-caption--letter-spacing: var(--type-caption-letter-spacing);
+  --text-caption--font-weight: var(--type-caption-weight);
+}
+
+/*
+ * The family each role uses; merged into the same class as the values above.
+ * Display roles use Inter's display optical size (Inter Display is Inter at
+ * opsz 32), so they render right whether "Inter Display" or the variable
+ * "Inter" font is loaded.
+ */
+@utility text-display-l {
+  font-family: var(--font-display);
+  font-variation-settings: 'opsz' 32;
+}
+@utility text-display-m {
+  font-family: var(--font-display);
+  font-variation-settings: 'opsz' 32;
+}
+@utility text-title-l {
+  font-family: var(--font-display);
+  font-variation-settings: 'opsz' 32;
+}
+@utility text-title-m {
+  font-family: var(--font-sans);
+}
+@utility text-title-s {
+  font-family: var(--font-sans);
+}
+@utility text-body-l {
+  font-family: var(--font-sans);
+}
+@utility text-body-m {
+  font-family: var(--font-sans);
+}
+@utility text-body-s {
+  font-family: var(--font-sans);
+}
+@utility text-label-m {
+  font-family: var(--font-sans);
+}
+@utility text-label-s {
+  font-family: var(--font-sans);
+}
+@utility text-label-xs {
+  font-family: var(--font-sans);
+}
+@utility text-caption {
+  font-family: var(--font-sans);
+}
+
+@theme {
+  /* `max-w-lg` etc.; Tailwind v4's default values. */
+  --container-3xs: 16rem;
+  --container-2xs: 18rem;
+  --container-xs: 20rem;
+  --container-sm: 24rem;
+  --container-md: 28rem;
+  --container-lg: 32rem;
+  --container-xl: 36rem;
+  --container-2xl: 42rem;
+  --container-3xl: 48rem;
+  --container-4xl: 56rem;
+  --container-5xl: 64rem;
+  --container-6xl: 72rem;
+  --container-7xl: 80rem;
+
+  --shadow-2xs: 0 1px rgb(0 0 0 / 0.05);
+  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  /* Figma "Box Shadow/menu": dropdowns, popovers, pickers (no border). */
+  --shadow-menu: 0 0 0 1px rgb(0 0 0 / 0.06), 0 2px 6px rgb(0 0 0 / 0.06),
+    0 12px 28px -6px rgb(0 0 0 / 0.08);
+  --radius-xs: 0.125rem;
+}

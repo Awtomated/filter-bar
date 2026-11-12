@@ -1,7 +1,9 @@
 import { defineConfig } from 'tsup';
 
 export default defineConfig({
-  entry: ['src/index.js'],
+  // `index` is the MUI version (the package root); `shadcn` is the
+  // shadcn/Radix/Tailwind version, published as `@awtomated/filter-bar/shadcn`.
+  entry: { index: 'src/index.js', shadcn: 'src/shadcn/index.js' },
   format: ['esm', 'cjs'],
   dts: false,
   sourcemap: true,
@@ -15,6 +17,13 @@ export default defineConfig({
     '@mui/icons-material',
     '@mui/x-date-pickers',
     '@mui/x-date-pickers-pro',
+    // shadcn entry: optional peers, resolved from the host app.
+    'radix-ui',
+    'lucide-react',
+    'class-variance-authority',
+    'clsx',
+    'tailwind-merge',
+    'date-fns',
   ],
   // Source files use the .js extension for JSX (matching this repo's own
   // convention), which esbuild doesn't parse as JSX by default.
