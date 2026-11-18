@@ -9,9 +9,14 @@ It has no knowledge of any specific backend, HTTP client, or app theme — every
 
 ## Install
 
-```sh
-npm install @awtomated/filter-bar
+The package is not published to a registry. Install it straight from this repository, pinned to a
+commit:
+
+```json
+"@awtomated/filter-bar": "github:Awtomated/filter-bar#<commit sha>"
 ```
+
+`dist/` is built on install by the `prepare` script.
 
 Peer dependencies (bring your own versions): `react`, `react-dom`, `@mui/material`,
 `@mui/icons-material`, `@mui/x-date-pickers`.
@@ -200,11 +205,24 @@ building block.
 ```sh
 yarn install
 yarn test        # jest unit tests for the pure helpers
+yarn lint
+yarn test        # jest unit tests
 yarn build       # tsup -> dist/ (esm + cjs)
+yarn smoke-test  # build, then check that both bundles load and export the public API
 ```
 
-Releases are fully automated via `semantic-release` on push to `master` (stable) and `develop`
-(`next` prerelease) — commit messages must follow
-[Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `chore:`, etc.),
-enforced by a commit-msg hook. Never hand-bump `package.json`'s version or run `npm publish`
-manually.
+CI (GitHub Actions, `.github/workflows/ci.yml`, Node 22) runs on every pull request and on pushes to
+`master` and `develop`: lint, the jest tests with a 90% global coverage gate (branches, functions,
+lines, statements) and the build smoke test.
+
+### Releasing
+
+Nothing is published to a package registry. To ship a new version:
+
+1. Merge the pull request here.
+2. In `main-app`, set the pinned commit in `package.json` to the new commit sha
+   (`"@awtomated/filter-bar": "github:Awtomated/filter-bar#<commit sha>"`), refresh the lockfile and
+   open a pull request there.
+
+Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`,
+`fix:`, `chore:`, etc.). Never run `npm publish`.
