@@ -113,13 +113,34 @@ describe('shadcn dates', () => {
       'This Week': ['2026-11-08T00:00:00Z', '2026-11-14T23:59:59Z'],
       'Last Week': ['2026-11-01T00:00:00Z', '2026-11-07T23:59:59Z'],
       'Last 7 Days': ['2026-11-05T00:00:00Z', '2026-11-12T00:00:00Z'],
+      'Last 30 Days': ['2026-10-13T00:00:00Z', '2026-11-12T00:00:00Z'],
       'Current Month': ['2026-11-01T00:00:00Z', '2026-11-30T23:59:59Z'],
+      'Last Month': ['2026-10-01T00:00:00Z', '2026-10-31T23:59:59Z'],
       'Next Month': ['2026-12-01T00:00:00Z', '2026-12-31T23:59:59Z'],
+      'This Quarter': ['2026-10-01T00:00:00Z', '2026-12-31T23:59:59Z'],
+      'Last Quarter': ['2026-07-01T00:00:00Z', '2026-09-30T23:59:59Z'],
+      'This Year': ['2026-01-01T00:00:00Z', '2026-12-31T23:59:59Z'],
+      'Last Year': ['2025-01-01T00:00:00Z', '2025-12-31T23:59:59Z'],
     });
+  });
+
+  it('puts the quarter and year presets in the right period at the edges', () => {
+    // 1 Jan: still this year's first quarter, last quarter is Q4 of last year.
+    jest.useFakeTimers({ now: new Date('2026-01-01T12:00:00Z') });
+    const edge = values(rangeShortcuts('UTC'), 'UTC');
+    expect(edge['This Quarter']).toEqual(['2026-01-01T00:00:00Z', '2026-03-31T23:59:59Z']);
+    expect(edge['Last Quarter']).toEqual(['2025-10-01T00:00:00Z', '2025-12-31T23:59:59Z']);
+    expect(edge['Last Month']).toEqual(['2025-12-01T00:00:00Z', '2025-12-31T23:59:59Z']);
+    // 31 Mar: last day of Q1.
+    jest.useFakeTimers({ now: new Date('2026-03-31T12:00:00Z') });
+    expect(values(rangeShortcuts('UTC'), 'UTC')['This Quarter']).toEqual([
+      '2026-01-01T00:00:00Z',
+      '2026-03-31T23:59:59Z',
+    ]);
   });
 
   it('defaults shortcuts to the browser timezone', () => {
     expect(singleShortcuts('gte').map((s) => s.label)).toEqual(['Today', 'Tomorrow']);
-    expect(rangeShortcuts()).toHaveLength(5);
+    expect(rangeShortcuts()).toHaveLength(11);
   });
 });
