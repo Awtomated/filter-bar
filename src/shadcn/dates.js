@@ -109,6 +109,16 @@ export function singleShortcuts(operatorValue, timezone) {
   return [];
 }
 
+// The calendar quarter (Jan-Mar, Apr-Jun, Jul-Sep, Oct-Dec) `offset` quarters
+// from the one `day` is in, as [first day, last day].
+function quarterRange(day, offset) {
+  const start = day
+    .month(Math.floor(day.month() / 3) * 3)
+    .startOf('month')
+    .add(offset * 3, 'month');
+  return [start, start.add(2, 'month').endOf('month')];
+}
+
 export function rangeShortcuts(timezone) {
   const today = () => dayjs().tz(resolveZone(timezone)).startOf('day');
   return [
@@ -121,12 +131,30 @@ export function rangeShortcuts(timezone) {
       },
     },
     { label: 'Last 7 Days', getValue: () => [today().subtract(7, 'day'), today()] },
+    { label: 'Last 30 Days', getValue: () => [today().subtract(30, 'day'), today()] },
     { label: 'Current Month', getValue: () => [today().startOf('month'), today().endOf('month')] },
+    {
+      label: 'Last Month',
+      getValue: () => {
+        const prevMonth = today().subtract(1, 'month');
+        return [prevMonth.startOf('month'), prevMonth.endOf('month')];
+      },
+    },
     {
       label: 'Next Month',
       getValue: () => {
         const nextMonth = today().add(1, 'month');
         return [nextMonth.startOf('month'), nextMonth.endOf('month')];
+      },
+    },
+    { label: 'This Quarter', getValue: () => quarterRange(today(), 0) },
+    { label: 'Last Quarter', getValue: () => quarterRange(today(), -1) },
+    { label: 'This Year', getValue: () => [today().startOf('year'), today().endOf('year')] },
+    {
+      label: 'Last Year',
+      getValue: () => {
+        const prevYear = today().subtract(1, 'year');
+        return [prevYear.startOf('year'), prevYear.endOf('year')];
       },
     },
   ];

@@ -61,7 +61,19 @@ const BROWSER_TZS = ['Asia/Kolkata', 'America/Los_Angeles', 'Pacific/Auckland'];
 const SHORTCUTS = {
   gte: ['Today', 'Tomorrow'],
   lte: ['Today', 'Yesterday'],
-  range: ['This Week', 'Last Week', 'Last 7 Days', 'Current Month', 'Next Month'],
+  range: [
+    'This Week',
+    'Last Week',
+    'Last 7 Days',
+    'Last 30 Days',
+    'Current Month',
+    'Last Month',
+    'Next Month',
+    'This Quarter',
+    'Last Quarter',
+    'This Year',
+    'Last Year',
+  ],
 };
 
 function renderMui(op, timezone, value = null) {
