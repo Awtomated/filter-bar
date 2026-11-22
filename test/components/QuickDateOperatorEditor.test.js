@@ -125,7 +125,7 @@ describe('QuickDateOperatorEditor', () => {
     );
     expect(screen.getByRole('button', { name: 'This Week' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Last 7 Days' })).toBeInTheDocument();
-    ['Last Month', 'This Quarter', 'Last Quarter', 'This Year', 'Last Year'].forEach((name) =>
+    ['Today', 'Yesterday', 'Last Month', 'This Quarter', 'Last Quarter', 'This Year', 'Last Year'].forEach((name) =>
       expect(screen.getByRole('button', { name })).toBeInTheDocument()
     );
     expect(screen.getByRole('button', { name: 'Reset' })).toBeInTheDocument();

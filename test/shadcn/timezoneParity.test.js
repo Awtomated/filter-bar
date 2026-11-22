@@ -62,6 +62,8 @@ const SHORTCUTS = {
   gte: ['Today', 'Tomorrow'],
   lte: ['Today', 'Yesterday'],
   range: [
+    'Today',
+    'Yesterday',
     'This Week',
     'Last Week',
     'Last 7 Days',

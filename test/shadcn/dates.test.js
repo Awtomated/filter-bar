@@ -110,6 +110,8 @@ describe('shadcn dates', () => {
   it('offers the MUI version’s range shortcuts (Sunday weeks, period ends at 23:59:59)', () => {
     jest.useFakeTimers({ now: new Date('2026-11-12T12:00:00Z') }); // Thursday
     expect(values(rangeShortcuts('UTC'), 'UTC')).toEqual({
+      Today: ['2026-11-12T00:00:00Z', '2026-11-12T23:59:59Z'],
+      Yesterday: ['2026-11-11T00:00:00Z', '2026-11-11T23:59:59Z'],
       'This Week': ['2026-11-08T00:00:00Z', '2026-11-14T23:59:59Z'],
       'Last Week': ['2026-11-01T00:00:00Z', '2026-11-07T23:59:59Z'],
       'Last 7 Days': ['2026-11-05T00:00:00Z', '2026-11-12T00:00:00Z'],
@@ -141,6 +143,6 @@ describe('shadcn dates', () => {
 
   it('defaults shortcuts to the browser timezone', () => {
     expect(singleShortcuts('gte').map((s) => s.label)).toEqual(['Today', 'Tomorrow']);
-    expect(rangeShortcuts()).toHaveLength(11);
+    expect(rangeShortcuts()).toHaveLength(13);
   });
 });
