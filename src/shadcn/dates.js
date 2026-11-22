@@ -122,6 +122,14 @@ function quarterRange(day, offset) {
 export function rangeShortcuts(timezone) {
   const today = () => dayjs().tz(resolveZone(timezone)).startOf('day');
   return [
+    { label: 'Today', getValue: () => [today(), today().endOf('day')] },
+    {
+      label: 'Yesterday',
+      getValue: () => {
+        const yesterday = today().subtract(1, 'day');
+        return [yesterday, yesterday.endOf('day')];
+      },
+    },
     { label: 'This Week', getValue: () => [today().startOf('week'), today().endOf('week')] },
     {
       label: 'Last Week',
