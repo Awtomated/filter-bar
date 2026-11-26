@@ -16,6 +16,33 @@ const rangeOp = {
   input_field: 'date',
 };
 
+function renderRange(weekStart, onValue = jest.fn()) {
+  return render(
+    <ChipEditor
+      fieldDef={{ name: 'd', label: 'Date', type: 'datetime', operators: [rangeOp] }}
+      operatorId={getOperatorId(rangeOp)}
+      value={null}
+      mode='value'
+      onModeChange={() => {}}
+      onOperatorPick={() => {}}
+      onValue={onValue}
+      onDone={() => {}}
+      choices={[]}
+      choicesLoading={false}
+      timezone='UTC'
+      weekStart={weekStart}
+      labels={labels}
+    />
+  );
+}
+
+const firstWeekday = (weekStart) => {
+  const { unmount } = renderRange(weekStart);
+  const text = screen.getAllByRole('columnheader')[0].textContent;
+  unmount();
+  return text;
+};
+
 function clickThisWeek(weekStart) {
   const onValue = jest.fn();
   const { unmount } = render(
@@ -56,5 +83,14 @@ describe('ChipEditor weekStart', () => {
       start: '2026-11-08T00:00:00Z',
       end: '2026-11-14T23:59:59Z',
     });
+  });
+});
+
+describe('DateCalendar weekStart', () => {
+  it('the grid starts on the host week start; Monday without it (unchanged)', () => {
+    expect(firstWeekday(0)).toBe('Su');
+    expect(firstWeekday(1)).toBe('Mo');
+    expect(firstWeekday(undefined)).toBe('Mo');
+    expect(firstWeekday(9)).toBe('Mo');
   });
 });

@@ -153,6 +153,7 @@ function ChipEditor({
         mode='single'
         value={isoToDay(value)}
         today={today}
+        weekStart={weekStart}
         shortcuts={singleShortcuts(op?.value, timezone)}
         labels={labels}
         // Serialized exactly as the MUI version does (see dates.js).
@@ -165,6 +166,7 @@ function ChipEditor({
         mode='range'
         value={[isoToDay(value?.start), isoToDay(value?.end)]}
         today={today}
+        weekStart={weekStart}
         shortcuts={rangeShortcuts(timezone, { weekStart })}
         labels={labels}
         onSelect={([start, end]) =>
