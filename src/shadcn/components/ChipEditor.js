@@ -86,6 +86,7 @@ function ChipEditor({
   choices,
   choicesLoading,
   timezone,
+  weekStart,
   labels,
   classNames = {},
 }) {
@@ -164,7 +165,7 @@ function ChipEditor({
         mode='range'
         value={[isoToDay(value?.start), isoToDay(value?.end)]}
         today={today}
-        shortcuts={rangeShortcuts(timezone)}
+        shortcuts={rangeShortcuts(timezone, { weekStart })}
         labels={labels}
         onSelect={([start, end]) =>
           onValue(
