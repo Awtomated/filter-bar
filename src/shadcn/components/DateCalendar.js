@@ -22,14 +22,28 @@ import { WEEK_STARTS_ON } from '../dates';
 // mode "range":  `value` [Date|null, Date|null], onSelect([start, end])
 // `shortcuts`: [{ label, getValue }] shown as a list beside the grid; their
 // values (dayjs, from dates.js) go to onSelect unchanged.
-function DateCalendar({ mode = 'single', value, onSelect, today, shortcuts = [], labels = {} }) {
+// `weekStart`: the grid's first weekday (0 Sunday … 6 Saturday, the host's
+// week start); without it Monday (WEEK_STARTS_ON), as before.
+const isWeekday = (value) => Number.isInteger(value) && value >= 0 && value <= 6;
+
+function DateCalendar({
+  mode = 'single',
+  value,
+  onSelect,
+  today,
+  shortcuts = [],
+  labels = {},
+  weekStart,
+}) {
   const selectedStart = mode === 'range' ? value?.[0] ?? null : value ?? null;
   const selectedEnd = mode === 'range' ? value?.[1] ?? null : null;
   const [month, setMonth] = useState(() => startOfMonth(selectedStart ?? today));
   // First click of a range, waiting for the second.
   const [pendingStart, setPendingStart] = useState(null);
 
-  const gridStart = startOfWeek(month, { weekStartsOn: WEEK_STARTS_ON });
+  const gridStart = startOfWeek(month, {
+    weekStartsOn: isWeekday(weekStart) ? weekStart : WEEK_STARTS_ON,
+  });
   const days = Array.from({ length: 42 }, (_, i) => addDays(gridStart, i));
   const weekdays = days.slice(0, 7);
 

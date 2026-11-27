@@ -13,10 +13,19 @@ export function calendarDayToIso(day, timezone) {
   return zoned;
 }
 
+// The calendar day a stored value stands for: the date as written in it
+// (as the shadcn version's isoToDay). Values the bar sends are midnight in
+// its timezone ("2026-11-13T00:00:00+05:30" is the 13th); older UTC-midnight
+// values and bare dates are read as written too. Reading the UTC date
+// instead turned the first example into the 12th east of UTC.
 export function isoToCalendarDay(iso, timezone) {
   if (!iso) return null;
-  const utcDate = dayjs.utc(iso);
-  return utcDate.isValid() ? dayjs.tz(utcDate.format('YYYY-MM-DD'), timezone) : null;
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso));
+  if (!match) return null;
+  const day = `${match[1]}-${match[2]}-${match[3]}`;
+  // Reject impossible dates ("2026-02-30") instead of rolling them over.
+  if (dayjs.utc(day).format('YYYY-MM-DD') !== day) return null;
+  return dayjs.tz(day, timezone);
 }
 
 export function getOperatorId(op) {
