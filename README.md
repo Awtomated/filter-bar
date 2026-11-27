@@ -231,9 +231,6 @@ How it behaves:
   editor: a searchable choice list with a check on selected entries, a text/number field (no Apply
   button and no request while typing: it applies on Enter, or on blur if the user forgot to press
   Enter; clearing it removes the filter), or a calendar with shortcuts (single date or range).
-- **`weekStart`** (shadcn only, optional): the first day of the "This Week" / "Last Week" range
-  shortcuts, `0` Sunday … `6` Saturday (main-app passes the organisation's week start). Without it
-  weeks start on Sunday, as in the MUI version.
 - Values that arrive as bare ids (e.g. `{ id: 5 }` from URL params) get their labels from the
   field's choices, fetched once per bar.
 
