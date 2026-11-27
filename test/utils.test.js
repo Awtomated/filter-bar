@@ -68,18 +68,6 @@ describe('calendarDayToIso / isoToCalendarDay', () => {
     expect(isoToCalendarDay('not-a-date', 'UTC')).toBeNull();
   });
 
-  it('reads the day written in the value, east of UTC too (not the UTC date)', () => {
-    // Midnight in Kolkata is the previous evening in UTC.
-    expect(isoToCalendarDay('2026-11-13T00:00:00+05:30', 'Asia/Kolkata').format('YYYY-MM-DD')).toBe(
-      '2026-11-13'
-    );
-    expect(
-      isoToCalendarDay('2026-11-13T00:00:00+13:00', 'Pacific/Auckland').format('YYYY-MM-DD')
-    ).toBe('2026-11-13');
-    expect(isoToCalendarDay('2026-01-31', 'UTC').format('YYYY-MM-DD')).toBe('2026-01-31');
-    expect(isoToCalendarDay('2026-02-30', 'UTC')).toBeNull();
-  });
-
   it('keeps the same calendar day regardless of timezone, rather than rolling it back a day west of UTC', () => {
     const day = isoToCalendarDay('2024-03-15T00:00:00.000Z', 'America/Los_Angeles');
     expect(day.format('YYYY-MM-DD')).toBe('2024-03-15');

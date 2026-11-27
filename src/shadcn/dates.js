@@ -119,20 +119,7 @@ function quarterRange(day, offset) {
   return [start, start.add(2, 'month').endOf('month')];
 }
 
-// The week `day` is in, starting on `weekStart` (0 Sunday … 6 Saturday), as
-// [first day, end of the last day]. Without a weekStart: dayjs's default
-// locale week (Sunday), as the MUI version.
-function weekRange(day, weekStart) {
-  if (!Number.isInteger(weekStart) || weekStart < 0 || weekStart > 6) {
-    return [day.startOf('week'), day.endOf('week')];
-  }
-  const start = day.subtract((day.day() - weekStart + 7) % 7, 'day').startOf('day');
-  return [start, start.add(6, 'day').endOf('day')];
-}
-
-// options.weekStart: the first day of "This Week" / "Last Week" (0 Sunday,
-// 1 Monday, ...; the host passes the organisation's). Default: Sunday.
-export function rangeShortcuts(timezone, { weekStart } = {}) {
+export function rangeShortcuts(timezone) {
   const today = () => dayjs().tz(resolveZone(timezone)).startOf('day');
   return [
     { label: 'Today', getValue: () => [today(), today().endOf('day')] },
@@ -143,8 +130,14 @@ export function rangeShortcuts(timezone, { weekStart } = {}) {
         return [yesterday, yesterday.endOf('day')];
       },
     },
-    { label: 'This Week', getValue: () => weekRange(today(), weekStart) },
-    { label: 'Last Week', getValue: () => weekRange(today().subtract(7, 'day'), weekStart) },
+    { label: 'This Week', getValue: () => [today().startOf('week'), today().endOf('week')] },
+    {
+      label: 'Last Week',
+      getValue: () => {
+        const prevWeek = today().subtract(7, 'day');
+        return [prevWeek.startOf('week'), prevWeek.endOf('week')];
+      },
+    },
     { label: 'Last 7 Days', getValue: () => [today().subtract(7, 'day'), today()] },
     { label: 'Last 30 Days', getValue: () => [today().subtract(30, 'day'), today()] },
     { label: 'Current Month', getValue: () => [today().startOf('month'), today().endOf('month')] },
