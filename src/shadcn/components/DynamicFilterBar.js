@@ -69,6 +69,7 @@ function FieldChip({
   store,
   icon,
   timezone,
+  weekStart,
   dateFormat,
   labels,
   classNames,
@@ -140,6 +141,7 @@ function FieldChip({
             choices={choices}
             choicesLoading={loading}
             timezone={timezone}
+            weekStart={weekStart}
             labels={labels}
             classNames={classNames}
           />
@@ -166,6 +168,9 @@ function DynamicFilterBarInner({
   appliedFilters = EMPTY_LIST,
   onFiltersChange,
   timezone,
+  // First day of the "This Week" / "Last Week" shortcuts (0 Sunday, 1
+  // Monday, ...); default Sunday, as before.
+  weekStart,
   dateFormat = DEFAULT_DATE_FORMAT,
   maxQuickChips = DEFAULT_PINNED_CHIPS,
   classNames = EMPTY,
@@ -353,6 +358,7 @@ function DynamicFilterBarInner({
             store={store}
             icon={fieldProps[name]?.icon}
             timezone={resolvedTimezone}
+            weekStart={weekStart}
             dateFormat={dateFormat}
             labels={labels}
             classNames={classNames}
